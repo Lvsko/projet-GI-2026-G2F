@@ -1,5 +1,10 @@
 package exit.model.enums;
-
+/**
+ * Represents the status of a node in the graph.
+ */
 public enum NodeStatus {
-    OPEN, BLOCKED
+    /** Node is accessible. */
+    OPEN, 
+    /** Node is blocked (fire door, smoke...). */
+    BLOCKED
 }
