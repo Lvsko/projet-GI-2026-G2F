@@ -5,5 +5,5 @@ package exit.model;
  * @author EXIT Team G2F
  */
 public class Node {
-    // TODO - a implementer par P2
+    // TODO - a implementer par Leonardo
 }
