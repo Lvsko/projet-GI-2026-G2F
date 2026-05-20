@@ -1,6 +1,8 @@
 package exit.model.enums;
+
 /**
  * Represents the psychological state of an agent during evacuation.
+ * @author Yoni
  */
 public enum AgentState {
     /** Agent is calm and follows optimal path. */
