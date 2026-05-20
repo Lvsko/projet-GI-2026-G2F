@@ -2,8 +2,8 @@ package exit.simulation;
 
 /**
  * Provides pathfinding algorithms (Dijkstra) for agent navigation.
- * @author Lassiana
+ * @author Lassina
  */
 public class Pathfinder {
-    // TODO - Lassiana
+    // TODO - Lassina
 }
