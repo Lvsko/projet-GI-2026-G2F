@@ -1,14 +1,16 @@
 package exit.model.enums;
+
 /**
  * Represents the type of a node in the building graph.
+ * @author Yoni
  */
 public enum NodeType {
     /** A standard room or office. */
-    ROOM, 
+    ROOM,
     /** A corridor connecting rooms. */
-    CORRIDOR, 
+    CORRIDOR,
     /** An emergency exit point. */
-    EXIT, 
+    EXIT,
     /** A staircase between floors. */
     STAIRCASE
 }
