@@ -2,8 +2,8 @@ package exit.view;
 
 /**
  * Main JavaFX view of the EXIT application.
- * @author ...
+ * @author Leonardo
  */
 public class MainView {
-    // TODO - Semaine 3
+    // TODO - leonardo
 }
