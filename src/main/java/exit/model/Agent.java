@@ -10,6 +10,8 @@ public class Agent {
 
     private final String id;
     private Node currentNode;
+    private Edge currentEdge;
+    
     private static int numberAgent = 0;
 
     /**
@@ -24,6 +26,10 @@ public class Agent {
         numberAgent++;
         this.id = id;
         this.currentNode = startNode;
+        this.currentEdge = null;
+        if (startNode != null) {
+            startNode.addAgent(this);
+        }
     }
     
     /**
@@ -37,31 +43,63 @@ public class Agent {
     /** 
      * @return the agent's identifier
      */
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
 
     /**
      * @return the agent's current node
      */
-    public Node getCurrentNode() {
-        return currentNode;
+    public Node getCurrentNode() { return currentNode; }
+    
+    /**
+     * @return the agent's current edge
+     */
+    public Edge getCurrentEdge() { return currentEdge; }
+
+    /**
+     * Moves the agent to a neighboring edge.
+     * @param edge edge where the agent is going
+     * @return true if the move was successful, false if the edge is full
+     */
+    public boolean moveToEdge(Edge edge) {
+        if (!edge.isAvailable()) {
+            return false;
+        }
+        if (this.currentNode != null) {
+            this.currentNode.removeAgent(this);
+            this.currentNode = null;
+        }
+        this.currentEdge = edge;
+        edge.addAgent(this);
+        return true;
     }
 
     /**
-     * Moves the agent to a neighboring node, the verification of constraints (valid edges) is the responsibility of the graph.
-     * @param targetNode destination node
+     * Arrive on a node, end of transit on the edge.
+     * @param node arrival node
      */
-    public void moveTo(Node targetNode) {
-    	if (this.currentNode != null) {
-            this.currentNode.removeAgent(this); // leaves the old node
-        this.currentNode = targetNode;
-        targetNode.addAgent(this); // enter into the new node
+    public void arriveAt(Node node) {
+        // Quitte l'arête actuelle
+        if (this.currentEdge != null) {
+            this.currentEdge.removeAgent(this);
+            this.currentEdge = null;
+        }
+        this.currentNode = node;
+        node.addAgent(this);
+    }
+
+    /** 
+     * @return true if the agent is on an edge
+     */
+    public boolean isInTransit() {
+        return (this.currentEdge != null);
     }
 
     @Override
     public String toString() {
-        return "Agent{id='" + id + "', currentNode=" + currentNode + "}";
+        if (isInTransit()) {
+            return "Agent{id='" + id + "', edge='" + currentEdge.getId() + "'}";
+        }
+        return "Agent{id='" + id + "', node='" + (currentNode != null ? currentNode.getId() : "none") + "'}";
     }
 
     @Override
