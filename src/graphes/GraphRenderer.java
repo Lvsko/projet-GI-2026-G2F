@@ -32,10 +32,10 @@ public class GraphRenderer {
         nodes.add(c);
         nodes.add(d);
 
-        edges.add(new Edge(a, b));
-        edges.add(new Edge(b, c));
-        edges.add(new Edge(c, d));
-        edges.add(new Edge(d, a));
+        edges.add(new Edge(a, b, 2, true));
+        edges.add(new Edge(b, c, 5, false));
+        edges.add(new Edge(c, d, 3, true));
+        edges.add(new Edge(d, a, 4, false));
         
     }
 
@@ -46,13 +46,41 @@ public class GraphRenderer {
         // Dessiner les arêtes
         gc.setStroke(Color.BLACK);
 
+
         for (Edge edge : edges) {
-            gc.strokeLine(
-                    edge.from.x,
-                    edge.from.y,
-                    edge.to.x,
-                    edge.to.y
-            );
+
+            // pour l'épaisseur de la ligne
+            gc.setLineWidth(edge.width);
+
+            double x1 = edge.from.x + 60;
+            double y1 = edge.from.y + 30;
+
+            double x2 = edge.to.x + 60;
+            double y2 = edge.to.y + 30;
+
+            // ligne principale
+            gc.strokeLine(x1, y1, x2, y2);
+
+            // si la flèche est dirigée
+            if(edge.directed) {
+
+                double angle = Math.atan2(y2 - y1, x2 - x1);
+
+                double arrowLength = 15;
+
+                // position de la pointe de la flèche avant le rectangle
+                double arrowX = x2 - 30 * Math.cos(angle);
+                double arrowY = y2 - 30 * Math.sin(angle);
+
+                double xArrow1 = arrowX - arrowLength * Math.cos(angle - Math.PI / 6);
+                double yArrow1 = arrowY - arrowLength * Math.sin(angle - Math.PI / 6);
+
+                double xArrow2 = arrowX - arrowLength * Math.cos(angle + Math.PI / 6);
+                double yArrow2 = arrowY - arrowLength * Math.sin(angle + Math.PI / 6);
+
+                gc.strokeLine(arrowX, arrowY, xArrow1, yArrow1);
+                gc.strokeLine(arrowX, arrowY, xArrow2, yArrow2);
+            }
         }
 
         // Dessiner les nœuds
