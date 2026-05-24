@@ -1,4 +1,5 @@
-package exit.cli;
+package main.java.exit.cli;
+import exit.cli.Menu;
 
 /**
  * Entry point for the command-line version of the EXIT simulation.
@@ -11,6 +12,7 @@ public class MainCLI {
      * @param args command-line arguments (not used)
      */
     public static void main(String[] args) {
-        // TODO - Ruben
+        Menu menu = new Menu();
+        menu.start();
     }
 }

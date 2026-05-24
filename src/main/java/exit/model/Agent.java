@@ -11,6 +11,7 @@ public class Agent {
     private final String id;
     private Node currentNode;
     private Edge currentEdge;
+    private Node destinationNode;
     
     private static int numberAgent = 0;
 
@@ -19,7 +20,7 @@ public class Agent {
      * @param id          unique identifier of the agent
      * @param startNode   initial node of the agent
      */
-    public Agent(String id, Node startNode) {
+    public Agent(String id, Node startNode, Node destinationNode) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Identifier can't be empty");
         }
@@ -36,8 +37,8 @@ public class Agent {
      * Creates an agent with an identifier "agentN" and a starting node.
      * @param startNode   initial node of the agent
      */
-    public Agent(Node startNode) {
-    	this("agent"+numberAgent, startNode);
+    public Agent(Node startNode, Node destinationNode) {
+    	this("agent"+numberAgent, startNode, destinationNode);
     }
     
     /** 
@@ -55,7 +56,12 @@ public class Agent {
      */
     public Edge getCurrentEdge() { return currentEdge; }
 
-    /**
+    
+    public Node getDestinationNode() {
+		return destinationNode;
+	}
+
+	/**
      * Moves the agent to a neighboring edge.
      * @param edge edge where the agent is going
      * @return true if the move was successful, false if the edge is full
