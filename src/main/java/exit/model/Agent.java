@@ -3,6 +3,8 @@ package exit.model;
 import exit.model.enums.AgentBehavior;
 import exit.model.enums.AgentState;
 import exit.model.enums.AgentType;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -20,7 +22,7 @@ public class Agent {
     private AgentBehavior behavior;
     private AgentType type;
     private float densityTolerance;
-
+	private List<Node> currentPath = new ArrayList<>();
     private static int numberAgent = 0;
 
     /**
@@ -86,8 +88,8 @@ public class Agent {
     public AgentBehavior getBehavior() { return behavior; }
     public AgentType getType() { return type; }
     public float getDensityTolerance() { return densityTolerance; }
-	
-	
+	public List<Node> getCurrentPath() { return currentPath; }
+	public void setCurrentPath(List<Node> path) { this.currentPath = path; }
 	
 	
 
