@@ -2,6 +2,7 @@ package exit.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import exit.model.enums.NodeType;
 
 /**
  * Main structure of the building, contains all nodes and edges.
