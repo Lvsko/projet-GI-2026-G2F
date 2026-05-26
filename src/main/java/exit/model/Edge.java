@@ -57,4 +57,11 @@ public class Edge {
     public float getSpeedModifier() { return speedModifier; }
     public boolean isDirected() { return directed; }
     public List<Agent> getAgents() { return agents; }
+
+    @Override
+    public String toString() {
+    return "Edge{id='" + id + "', from='" + source.getId() + "', to='" + target.getId() + "', width=" + width + "}";
+    }
+
+
 }
