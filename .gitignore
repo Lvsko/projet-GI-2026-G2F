@@ -1,1 +1,13 @@
+<<<<<<< HEAD
 "*.class" 
+=======
+# Compiled files
+*.class
+bin/
+target/
+
+# Eclipse
+.classpath
+.project
+.settings/
+>>>>>>> 68aa7d5bba8cda986928beb6095f71bc0b0b960c
