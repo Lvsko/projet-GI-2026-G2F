@@ -3,6 +3,7 @@ package exit.model;
 import exit.model.enums.AgentBehavior;
 import exit.model.enums.AgentState;
 import exit.model.enums.AgentType;
+import exit.model.enums.NodeType;
 import exit.simulation.Pathfinder;
 import java.util.ArrayList;
 import java.util.List;
@@ -95,8 +96,7 @@ public class Agent {
      * - CALM / INJURED    → optimal exit via dijkstraTime 
      * - PANICKED → nearest exit via dijkstraDistance 
      * @param graph     graph of the building
-     * @param exits     the list of nodes of type EXIT
-     * @retur the best exit
+     * @return the best exit
      */
     private Node chooseBestExit(Graph graph) {
     	Pathfinder pathfinder = new Pathfinder();
