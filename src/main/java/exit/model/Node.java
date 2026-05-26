@@ -63,4 +63,10 @@ public class Node {
     public NodeType getType() { return type; }
     public float getAttractiveness() { return attractiveness; }
     public List<Agent> getAgents() { return agents; }
+
+    @Override
+    public String toString() {
+    return "Node{id='" + id + "', name='" + name + "', type=" + type + ", status=" + status + "}";
+    }
+    
 }
