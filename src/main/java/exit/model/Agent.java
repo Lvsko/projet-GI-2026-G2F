@@ -3,10 +3,10 @@ package exit.model;
 import exit.model.enums.AgentBehavior;
 import exit.model.enums.AgentState;
 import exit.model.enums.AgentType;
+import exit.simulation.Pathfinder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import exit.model.enums.AgentState;
 
 /**
  * Represents a person evacuating the building.
@@ -18,17 +18,13 @@ public class Agent {
     private Node currentNode;
     private Edge currentEdge;
     private Node destinationNode;
-<<<<<<< HEAD
     private float maxSpeed;
     private AgentState state;
     private AgentBehavior behavior;
     private AgentType type;
     private float densityTolerance;
 	private List<Node> currentPath = new ArrayList<>();
-=======
-    private AgentState state;
     
->>>>>>> 3c2c572 (Ajout du rendu des Agents dans GraphView)
     private static int numberAgent = 0;
 
     /**
@@ -50,13 +46,12 @@ public class Agent {
         this.id = id;
         this.currentNode = startNode;
         this.currentEdge = null;
-		this.destinationNode = chooseBestExit(graph, exits);
 		this.maxSpeed = maxSpeed;
         this.state = state;
         this.behavior = behavior;
         this.type = type;
         this.densityTolerance = densityTolerance;
-        this.state = AgentState.CALM;
+		this.destinationNode = chooseBestExit(graph, exits);
         if (startNode != null) {
             startNode.addAgent(this);
         }
@@ -67,7 +62,7 @@ public class Agent {
      * @param startNode   initial node of the agent
      */
     public Agent(Node startNode, Graph graph, List<Node> exits) {
-    	this("agent"+numberAgent, startNode, 1.0f, AgentState.CALM, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f, Graph graph, List<Node> exits);
+    	this("agent"+numberAgent, startNode, 1.0f, AgentState.CALM, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f, graph, exits);
     }
     
     /** 
@@ -104,26 +99,26 @@ public class Agent {
      * @retur the best exit
      */
     private Node chooseBestExit(Graph graph, List<Node> exits) {
-    Pathfinder pathfinder = new Pathfinder();
-    Node bestExit = null;
-    float bestScore = Float.MAX_VALUE;
+    	Pathfinder pathfinder = new Pathfinder();
+    	Node bestExit = null;
+    	float bestScore = Float.MAX_VALUE;
 
-    for (Node exit : exits) {
-        List<Node> path = state == AgentState.PANICKED
-            ? pathfinder.dijkstraDistance(currentNode, exit, graph)
-            : pathfinder.dijkstraTime(currentNode, exit, graph);
+    	for (Node exit : exits) {
+        	List<Node> path = state == AgentState.PANICKED
+            	? pathfinder.dijkstraDistance(currentNode, exit, graph)
+            	: pathfinder.dijkstraTime(currentNode, exit, graph);
 
-        if (path.isEmpty()) continue; // inaccessible exit
+        	if (path.isEmpty()) continue; // inaccessible exit
 
-        float score = path.size();
+        	float score = path.size();
 
-        if (score < bestScore) {
+        	if (score < bestScore) {
             bestScore = score;
             bestExit = exit;
-        }
-    }
-    return bestExit;
-}
+        	}
+    	}
+    	return bestExit;
+	}
 
 	/**
      * Moves the agent to a neighboring edge.
@@ -185,11 +180,5 @@ public class Agent {
         return Objects.hash(id);
     }
 
-    public AgentState getState() {
-        return state;
-    }
 
-    public void setState(AgentState state) {
-        this.state = state;
-    }
 }
