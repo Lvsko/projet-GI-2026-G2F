@@ -79,7 +79,7 @@ public class Agent {
     
     public Node getDestinationNode() {
 		return destinationNode;
-	
+	}
 	public float getMaxSpeed() { return maxSpeed; }
     public AgentState getState() { return state; }
     public void setState(AgentState state) { this.state = state; }
@@ -89,7 +89,7 @@ public class Agent {
 	
 	
 	
-	}
+	
 
 	/**
      * Moves the agent to a neighboring edge.
