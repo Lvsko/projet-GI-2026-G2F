@@ -5,9 +5,9 @@ import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.control.Button;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import javafx.scene.control.Button;
 /**
  * Main JavaFX view of the EXIT application.
  * @author Leonardo
@@ -15,7 +15,9 @@ import javafx.scene.control.Button;
 public class MainView extends Application {
     @Override
     public void start(Stage stage) {
-        Canvas canvas = new Canvas(800, 600);
+        Canvas canvas = new Canvas(800, 560);
+        canvas.setLayoutY(50);
+
         GraphView renderer = new GraphView(canvas);
         renderer.drawGraph();
 
@@ -23,13 +25,14 @@ public class MainView extends Application {
         for (Agent agent : renderer.getAgents()) {
             engine.addAgent(agent);
         }
+        renderer.setEngine(engine);
         engine.start();
 
         AnimationTimer timer = new AnimationTimer() {
             private long lastTick = 0;
             @Override
             public void handle(long now) {
-                if (engine.isRunning() && now - lastTick >= 800_000_000L) {
+                if (engine.isRunning() && now - lastTick >= 2_000_000_000L) {
                     engine.step();
                     renderer.drawGraph();
                     lastTick = now;
@@ -37,6 +40,8 @@ public class MainView extends Application {
             }
         };
         timer.start();
+
+        // Pause / Resume
         Button pauseButton = new Button("Pause");
         pauseButton.setLayoutX(10);
         pauseButton.setLayoutY(10);
@@ -49,9 +54,28 @@ public class MainView extends Application {
                 pauseButton.setText("Pause");
             }
         });
-        Pane root = new Pane(canvas, pauseButton);
-        Scene scene = new Scene(root, 800, 600);
-        stage.setTitle("Graph");
+
+        // Spawn agent
+        Button spawnButton = new Button("Spawn Agent");
+        spawnButton.setLayoutX(100);
+        spawnButton.setLayoutY(10);
+        spawnButton.setOnAction(e -> renderer.spawnAgentAtRoom());
+
+        // Add room node
+        Button addNodeButton = new Button("Add Room");
+        addNodeButton.setLayoutX(210);
+        addNodeButton.setLayoutY(10);
+        addNodeButton.setOnAction(e -> renderer.addRoomNode());
+
+        // Remove selected node
+        Button removeNodeButton = new Button("Remove Selected");
+        removeNodeButton.setLayoutX(300);
+        removeNodeButton.setLayoutY(10);
+        removeNodeButton.setOnAction(e -> renderer.removeSelectedNode());
+
+        Pane root = new Pane(canvas, pauseButton, spawnButton, addNodeButton, removeNodeButton);
+        Scene scene = new Scene(root, 800, 610);
+        stage.setTitle("EXIT Simulation");
         stage.setScene(scene);
         stage.show();
     }
