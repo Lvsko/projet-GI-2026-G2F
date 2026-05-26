@@ -2,6 +2,8 @@ package exit.model;
 
 import exit.model.enums.NodeStatus;
 import exit.model.enums.NodeType;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,7 +11,7 @@ import java.util.List;
  * Represents a node (room, corridor, exit) in the building graph.
  * @author Yoni
  */
-public class Node {
+public class Node implements Serializable {
 
     private String id;
     private String name;

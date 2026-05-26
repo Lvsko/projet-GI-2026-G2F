@@ -1,5 +1,6 @@
 package exit.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import exit.model.enums.NodeType;
@@ -8,7 +9,7 @@ import exit.model.enums.NodeType;
  * Main structure of the building, contains all nodes and edges.
  * @author Yoni
  */
-public class Graph {
+public class Graph implements Serializable {
 
     private List<Node> nodes;
     private List<Edge> edges;

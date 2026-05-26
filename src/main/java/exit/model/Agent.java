@@ -5,6 +5,8 @@ import exit.model.enums.AgentState;
 import exit.model.enums.AgentType;
 import exit.model.enums.NodeType;
 import exit.simulation.Pathfinder;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -13,7 +15,7 @@ import java.util.Objects;
  * Represents a person evacuating the building.
  * @author Clement
  */
-public class Agent {
+public class Agent implements Serializable {
 
     private final String id;
     private Node currentNode;
@@ -39,7 +41,7 @@ public class Agent {
      * @param type physical profile
      * @param densityTolerance tolerance to crowded areas
      */
-    public Agent(String id, Node startNode, float maxSpeed, AgentState state, AgentBehavior behavior, AgentType type, float densityTolerance, Graph graph) {
+    public Agent(String id, Node startNode, float maxSpeed, AgentState state, AgentBehavior behavior, AgentType type, float densityTolerance, Agent graph) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Identifier can't be empty");
         }
@@ -62,7 +64,7 @@ public class Agent {
      * Creates an agent with an identifier "agentN" and a starting node.
      * @param startNode   initial node of the agent
      */
-    public Agent(Node startNode, Graph graph) {
+    public Agent(Node startNode, Agent graph) {
     	this("agent"+numberAgent, startNode, 1.0f, AgentState.CALM, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f, graph);
     }
     
@@ -98,7 +100,7 @@ public class Agent {
      * @param graph     graph of the building
      * @return the best exit
      */
-    private Node chooseBestExit(Graph graph) {
+    private Node chooseBestExit(Agent graph) {
     	Pathfinder pathfinder = new Pathfinder();
     	Node bestExit = null;
     	float bestScore = Float.MAX_VALUE;

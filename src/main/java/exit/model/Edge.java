@@ -1,5 +1,6 @@
 package exit.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,7 +8,7 @@ import java.util.List;
  * Represents a corridor between two nodes in the building graph.
  * @author Yoni
  */
-public class Edge {
+public class Edge implements Serializable {
 
     private String id;
     private Node source;
