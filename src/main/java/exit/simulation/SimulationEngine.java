@@ -1,7 +1,9 @@
 package exit.simulation;
 
 import exit.model.Agent;
+import exit.model.Edge;
 import exit.model.Graph;
+import exit.model.Node;
 import exit.stats.Statistics;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,11 +48,38 @@ public class SimulationEngine {
     /** Advances the simulation by one tick */
     public void step() {
         currentTick++;
-        // TODO - appeler agent.update() pour chaque agent
         for (Agent agent : agents) {
-            // TODO - Yoni : logique de déplacement
+            moveAgent(agent);
         }
     }
+    /** Moves an agent one step forward */
+    private void moveAgent(Agent agent) {
+        if (agent.isInTransit()) {
+            // agent is in an edge, make it arrive at the target node
+            agent.arriveAt(agent.getCurrentEdge().getTarget());
+        } else if (!agent.getCurrentPath().isEmpty()) {
+            // agent is in a node, find the next edge
+            Node nextNode = agent.getCurrentPath().get(0);
+            agent.getCurrentPath().remove(0);
+            Edge edge = findEdge(agent.getCurrentNode(), nextNode);
+            if (edge != null) {
+                agent.moveToEdge(edge);
+            }
+        }
+    }
+    /** Finds the edge connecting two nodes */
+    private Edge findEdge(Node from, Node to) {
+        for (Edge edge : graph.getEdges()) {
+            if (edge.getSource().equals(from) && edge.getTarget().equals(to)) {
+                return edge;
+            }
+            if (!edge.isDirected() && edge.getTarget().equals(from) && edge.getSource().equals(to)) {
+                return edge;
+            }
+        }
+        return null;
+    }
+
 
     /** Adds an agent to the simulation */
     public void addAgent(Agent agent) {
