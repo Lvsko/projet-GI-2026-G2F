@@ -14,22 +14,41 @@ import exit.model.enums.AgentState;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Handles the 2D rendering of the graph, agents and nodes.
- * @author Leonardo
- */
 public class GraphView {
 
     private Canvas canvas;
     private GraphicsContext gc;
-
     private List<Node> nodes = new ArrayList<>();
     private List<Edge> edges = new ArrayList<>();
     private List<Agent> agents = new ArrayList<>();
+    private Node selectedNode;
 
     public GraphView(Canvas canvas) {
         this.canvas = canvas;
         this.gc = canvas.getGraphicsContext2D();
+        
+        canvas.setOnMouseClicked(event -> {
+
+            double mouseX = event.getX();
+            double mouseY = event.getY();
+
+            for (Node node : nodes) {
+
+                if (
+                    mouseX >= node.getX()
+                    && mouseX <= node.getX() + 120
+                    && mouseY >= node.getY()
+                    && mouseY <= node.getY() + 60
+                ) {
+
+                    selectedNode = node;
+
+                    drawGraph();
+
+                    System.out.println("Selected node: " + node.getName());
+                }
+            }
+        });
 
         createSampleGraph();
     }
@@ -218,10 +237,24 @@ public class GraphView {
             gc.fillRect(node.getX(), node.getY(), 120, 60);
 
             gc.setStroke(Color.BLACK);
+            if (node == selectedNode) {
+                gc.setStroke(Color.RED);
+                gc.setLineWidth(3);
+            }
+            else {
+                gc.setStroke(Color.BLACK);
+                gc.setLineWidth(1);
+            }
             gc.strokeRect(node.getX(), node.getY(), 120, 60);
 
+<<<<<<< HEAD
             // Node label
             gc.setFill(Color.BLACK);
+=======
+            // Texte du noeud
+            gc.setFill(Color.BLACK);
+            gc.setFill(Color.WHITE);
+>>>>>>> 9035940 (Ajout de la selection system)
             gc.fillText(
                 node.getName(),
                 node.getX() + 20,
@@ -260,5 +293,39 @@ public class GraphView {
                 gc.fillOval(agentX, agentY, 15, 15);
             }
         }
+        if (selectedNode != null) {
+
+            gc.setFill(Color.BLACK);
+
+            gc.fillText(
+                "Selected Node",
+                600,
+                100
+            );
+
+            gc.fillText(
+                "ID: " + selectedNode.getId(),
+                600,
+                130
+            );
+
+            gc.fillText(
+                "Type: " + selectedNode.getType(),
+                600,
+                160
+            );
+
+            gc.fillText(
+                "Capacity: " + selectedNode.getMaxCapacity(),
+                600,
+                190
+            );
+
+            gc.fillText(
+                "Agents: " + selectedNode.getOccupancy(),
+                600,
+                220
+            );
+        } 
     }
 }

@@ -167,7 +167,7 @@ public class Pathfinder {
                 float timeCost = distance / denominator;
                 
                 // Time cost calculation targeting the congestion factor
-                float timeCost = distance / (speedModifier * (1.0f - occupancyRatio));
+               
 
                 float newTime = times.get(currentNode) + timeCost;
 
