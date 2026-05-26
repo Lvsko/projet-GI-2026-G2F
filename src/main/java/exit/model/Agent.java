@@ -36,7 +36,7 @@ public class Agent {
      * @param type physical profile
      * @param densityTolerance tolerance to crowded areas
      */
-    public Agent(String id, Node startNode, Node destinationNode, float maxSpeed, AgentState state, AgentBehavior behavior, AgentType type, float densityTolerance ) {
+    public Agent(String id, Node startNode, float maxSpeed, AgentState state, AgentBehavior behavior, AgentType type, float densityTolerance, Graph graph, List<Node> exits) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Identifier can't be empty");
         }
@@ -44,7 +44,7 @@ public class Agent {
         this.id = id;
         this.currentNode = startNode;
         this.currentEdge = null;
-		this.destinationNode = destinationNode;
+		this.destinationNode = chooseBestExit(graph, exits);
 		this.maxSpeed = maxSpeed;
         this.state = state;
         this.behavior = behavior;
@@ -59,29 +59,26 @@ public class Agent {
      * Creates an agent with an identifier "agentN" and a starting node.
      * @param startNode   initial node of the agent
      */
-    public Agent(Node startNode, Node destinationNode) {
-    	this("agent"+numberAgent, startNode, destinationNode, 1.0f, AgentState.CALM, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f);
+    public Agent(Node startNode, Graph graph, List<Node> exits) {
+    	this("agent"+numberAgent, startNode, 1.0f, AgentState.CALM, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f, Graph graph, List<Node> exits);
     }
     
     /** 
      * @return the agent's identifier
      */
     public String getId() { return id; }
-
     /**
      * @return the agent's current node
      */
     public Node getCurrentNode() { return currentNode; }
-    
     /**
      * @return the agent's current edge
      */
     public Edge getCurrentEdge() { return currentEdge; }
 
     
-    public Node getDestinationNode() {
-		return destinationNode;
-	}
+    public Node getDestinationNode() {	return destinationNode;	}
+	public void setDestinationNode(Node destinationNode) { this.destinationNode = destinationNode; }
 	public float getMaxSpeed() { return maxSpeed; }
     public AgentState getState() { return state; }
     public void setState(AgentState state) { this.state = state; }
@@ -91,7 +88,35 @@ public class Agent {
 	public List<Node> getCurrentPath() { return currentPath; }
 	public void setCurrentPath(List<Node> path) { this.currentPath = path; }
 	
-	
+	    /**
+     * Automatically chooses the best output according to the agent's state.
+     * - CALM / INJURED    → optimal exit via dijkstraTime 
+     * - PANICKED → nearest exit via dijkstraDistance 
+     * @param graph     graph of the building
+     * @param exits     the list of nodes of type EXIT
+     * @retur the best exit
+     */
+    private Node chooseBestExit(Graph graph, List<Node> exits) {
+    Pathfinder pathfinder = new Pathfinder();
+    Node bestExit = null;
+    float bestScore = Float.MAX_VALUE;
+
+    for (Node exit : exits) {
+        List<Node> path = state == AgentState.PANICKED
+            ? pathfinder.dijkstraDistance(currentNode, exit, graph)
+            : pathfinder.dijkstraTime(currentNode, exit, graph);
+
+        if (path.isEmpty()) continue; // inaccessible exit
+
+        float score = path.size();
+
+        if (score < bestScore) {
+            bestScore = score;
+            bestExit = exit;
+        }
+    }
+    return bestExit;
+}
 
 	/**
      * Moves the agent to a neighboring edge.
