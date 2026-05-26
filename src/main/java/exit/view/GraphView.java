@@ -10,13 +10,6 @@ import javafx.scene.paint.Color;
 import exit.model.enums.NodeStatus;
 import exit.model.enums.NodeType;
 import exit.model.enums.AgentState;
-/**
- * Handles the 2D rendering of the graph, agents and nodes.
- * @author Leonardo
- */
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,7 +85,7 @@ public class GraphView {
         nodes.add(c);
         nodes.add(d);
 
-        edges.add(new Edge(
+        Edge e1 = new Edge(
         	    "E1",
         	    a,
         	    b,
@@ -100,9 +93,9 @@ public class GraphView {
         	    1.0f,
         	    1.0f,
         	    true
-        	));
+        	);
 
-        	edges.add(new Edge(
+        	Edge e2 = new Edge(
         	    "E2",
         	    b,
         	    c,
@@ -110,9 +103,9 @@ public class GraphView {
         	    1.0f,
         	    1.0f,
         	    false
-        	));
+        	);
 
-        	edges.add(new Edge(
+        	Edge e3 = new Edge(
         	    "E3",
         	    c,
         	    d,
@@ -120,9 +113,9 @@ public class GraphView {
         	    1.0f,
         	    1.0f,
         	    true
-        	));
+        	);
 
-        	edges.add(new Edge(
+        	Edge e4 = new Edge(
         	    "E4",
         	    d,
         	    a,
@@ -130,10 +123,25 @@ public class GraphView {
         	    1.0f,
         	    1.0f,
         	    false
-        	));
-        	Agent agent1 = new Agent(a, b);
-        	Agent agent2 = new Agent(b, c);
-        	Agent agent3 = new Agent(c, d);
+        	);
+            edges.add(e1);
+        	edges.add(e2);
+        	edges.add(e3);
+        	edges.add(e4);
+
+            Graph graph = new Graph();
+        	graph.addNode(a);
+        	graph.addNode(b);
+        	graph.addNode(c);
+        	graph.addNode(d);
+        	graph.addEdge(e1);
+        	graph.addEdge(e2);
+        	graph.addEdge(e3);
+        	graph.addEdge(e4);
+        
+        	Agent agent1 = new Agent(a, graph);
+        	Agent agent2 = new Agent(b, graph);
+        	Agent agent3 = new Agent(c, graph);
 
         	agents.add(agent1);
         	agents.add(agent2);
@@ -147,7 +155,7 @@ public class GraphView {
 
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
-        // Dessiner les arêtes
+        // Draw edges
         gc.setStroke(Color.BLACK);
 
         for (Edge edge : edges) {
@@ -182,7 +190,7 @@ public class GraphView {
             }
         }
 
-        // Dessiner les noeuds
+        // Draw nodes
         for (Node node : nodes) {
 
             switch(node.getType()) {
@@ -212,13 +220,8 @@ public class GraphView {
             gc.setStroke(Color.BLACK);
             gc.strokeRect(node.getX(), node.getY(), 120, 60);
 
-<<<<<<< HEAD
-            // Texte du noeud
+            // Node label
             gc.setFill(Color.BLACK);
-=======
-            gc.setFill(Color.WHITE);
-
->>>>>>> 3c2c572 (Ajout du rendu des Agents dans GraphView)
             gc.fillText(
                 node.getName(),
                 node.getX() + 20,
@@ -226,7 +229,7 @@ public class GraphView {
             );
         }
 
-        // Dessiner les agents
+        // Draw agents
         for (Agent agent : agents) {
 
             Node node = agent.getCurrentNode();
