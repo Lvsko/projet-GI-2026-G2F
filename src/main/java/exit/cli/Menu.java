@@ -3,6 +3,7 @@ import exit.model.Agent;
 import exit.model.Graph;
 import exit.model.Node;
 import exit.model.Edge;
+import exit.model.enums.AgentType;
 import exit.model.enums.NodeStatus;
 import exit.model.enums.NodeType;
 import exit.simulation.SimulationEngine;
@@ -117,23 +118,31 @@ public class Menu {
         for (Node n : this.graph.getNodes()) {
             System.out.println(n);
         }
+        
         System.out.println("Select the starting node's ID");
         String id = scanner.next();
-
         Node startNode = this.graph.getNode(id);
         if (startNode == null) {
             System.out.println("Node not found.");
             return;
         }
-        Node destination = this.graph.getNode("ex1");
-        if (destination == null) {
-            System.out.println("No exit found in the graph.");
-            return;
+        
+
+        System.out.println("How many agents?");
+        int count = scanner.nextInt();
+        
+
+        System.out.println("Agent type? (ADULT, CHILD, PMR)");
+        String typeStr = scanner.next();
+        AgentType type = AgentType.valueOf(typeStr.toUpperCase());
+        
+
+        for (int i = 0; i < count; i++) {
+            Agent agent = new Agent(startNode, this.graph);
+            this.agents.add(agent);
+            this.engine.addAgent(agent);
         }
-        Agent agent = new Agent(startNode, destination);
-        this.agents.add(agent);
-        this.engine.addAgent(agent);
-        System.out.println("Agent " + agent.getId() + " placed in " + startNode.getName());
+        System.out.println(count + " agent(s) placed in " + startNode.getName());
     }
 
     /**
