@@ -115,7 +115,8 @@ public class Agent implements Serializable {
     	Pathfinder pathfinder = new Pathfinder();
     	Node bestExit = null;
     	float bestScore = Float.MAX_VALUE;
-
+		List<Node> bestPath = new ArrayList<>();
+		
     	for (Node exit :  graph.getNodesByType(NodeType.EXIT)) {
         	List<Node> path = state == AgentState.PANICKED
             	? pathfinder.dijkstraDistance(currentNode, exit, graph)
@@ -125,10 +126,15 @@ public class Agent implements Serializable {
 
         	float score = path.size();
         	if (score < bestScore) {
-            bestScore = score;
-            bestExit = exit;
+            	bestScore = score;
+            	bestExit = exit;
+				bestPath = path;
         	}
     	}
+		if (!bestPath.isEmpty()) {
+        	bestPath.remove(0);
+		}
+		this.currentPath = bestPath;
     	return bestExit;
 	}
 
