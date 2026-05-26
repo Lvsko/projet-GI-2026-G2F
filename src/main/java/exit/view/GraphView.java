@@ -22,6 +22,7 @@ public class GraphView {
     private List<Edge> edges = new ArrayList<>();
     private List<Agent> agents = new ArrayList<>();
     private Node selectedNode;
+    private Graph graph;
 
     public GraphView(Canvas canvas) {
         this.canvas = canvas;
@@ -148,7 +149,7 @@ public class GraphView {
         	edges.add(e3);
         	edges.add(e4);
 
-            Graph graph = new Graph();
+            this.graph = new Graph();
         	graph.addNode(a);
         	graph.addNode(b);
         	graph.addNode(c);
@@ -247,14 +248,13 @@ public class GraphView {
             }
             gc.strokeRect(node.getX(), node.getY(), 120, 60);
 
-<<<<<<< HEAD
             // Node label
             gc.setFill(Color.BLACK);
-=======
+            
             // Texte du noeud
             gc.setFill(Color.BLACK);
             gc.setFill(Color.WHITE);
->>>>>>> 9035940 (Ajout de la selection system)
+
             gc.fillText(
                 node.getName(),
                 node.getX() + 20,
@@ -327,5 +327,12 @@ public class GraphView {
                 220
             );
         } 
+    }
+    public Graph getGraph() {
+        return graph;
+    }
+
+    public List<Agent> getAgents() {
+        return agents;
     }
 }

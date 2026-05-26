@@ -5,15 +5,11 @@ import exit.model.enums.AgentState;
 import exit.model.enums.AgentType;
 import exit.model.enums.NodeType;
 import exit.simulation.Pathfinder;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-<<<<<<< HEAD
-=======
-import exit.simulation.Pathfinder;
->>>>>>> 9035940 (Ajout de la selection system)
+
 
 /**
  * Represents a person evacuating the building.
@@ -68,11 +64,8 @@ public class Agent implements Serializable {
      * Creates an agent with an identifier "agentN" and a starting node.
      * @param startNode   initial node of the agent
      */
-<<<<<<< HEAD
+
     public Agent(Node startNode, Graph graph) {
-    	this("agent"+numberAgent, startNode, 1.0f, AgentState.CALM, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f, graph);
-=======
-    public Agent(Node startNode, Graph graph, List<Node> exits) {
         this(
             "agent" + numberAgent,
             startNode,
@@ -81,11 +74,10 @@ public class Agent implements Serializable {
             AgentBehavior.COOPERATIVE,
             AgentType.ADULT,
             0.5f,
-            graph,
-            exits
+            graph
         );
     }
-    
+
     public Agent(Node startNode, Node destinationNode) {
         this.id = "agent" + numberAgent++;
         this.currentNode = startNode;
@@ -96,7 +88,6 @@ public class Agent implements Serializable {
         if (startNode != null) {
             startNode.addAgent(this);
         }
->>>>>>> 9035940 (Ajout de la selection system)
     }
     
     /** 
@@ -212,8 +203,4 @@ public class Agent implements Serializable {
         return Objects.hash(id);
     }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 9035940 (Ajout de la selection system)
 }
