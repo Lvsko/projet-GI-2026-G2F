@@ -161,8 +161,11 @@ public class Pathfinder {
                 // Formula from ticket: weight = distance / (speedModifier * (1 - occupancyRatio))
                 float distance = connectingEdge.getDistance();
                 float speedModifier = connectingEdge.getSpeedModifier(); // assuming getter exists
-                float occupancyRatio = connectingEdge.getOccupancy(); // assuming getter exists
-
+                float occupancyRatio = (float) connectingEdge.getOccupancy() / connectingEdge.getWidth(); // assuming getter exists
+                float denominator = speedModifier * (1.0f - occupancyRatio);
+                if (denominator <= 0) denominator = 0.01f;
+                float timeCost = distance / denominator;
+                
                 // Time cost calculation targeting the congestion factor
                 float timeCost = distance / (speedModifier * (1.0f - occupancyRatio));
 
