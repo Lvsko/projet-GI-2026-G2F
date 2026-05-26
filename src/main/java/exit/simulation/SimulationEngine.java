@@ -61,10 +61,11 @@ public class SimulationEngine {
         } else if (!agent.getCurrentPath().isEmpty()) {
             // agent is in a node, find the next edge
             Node nextNode = agent.getCurrentPath().get(0);
-            agent.getCurrentPath().remove(0);
             Edge edge = findEdge(agent.getCurrentNode(), nextNode);
-            if (edge != null) {
-                agent.moveToEdge(edge);
+            if (edge != null && edge.isAvailable()) {
+                if (agent.moveToEdge(edge)) {
+                    agent.getCurrentPath().remove(0);
+                }
             }
         }
     }
