@@ -20,18 +20,15 @@ public class SimulationState implements Serializable {
 	}
 	
 	public void save(String path) throws IOException {
-	    FileOutputStream fos = new FileOutputStream(path);
-	    ObjectOutputStream oos = new ObjectOutputStream(fos);
-	    oos.writeObject(this);
-	    oos.close();
+    	try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path))) {
+        	oos.writeObject(this);
+    	}
 	}
 	
 	public static SimulationState load(String path) throws IOException, ClassNotFoundException {
-	    FileInputStream fis = new FileInputStream(path);
-	    ObjectInputStream ois = new ObjectInputStream(fis);
-	    SimulationState state = (SimulationState) ois.readObject();
-	    ois.close();
-	    return state;
+    	try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(path))) {
+        	return (SimulationState) ois.readObject();
+    	}
 	}
 	
 	public Graph getGraph() { return graph; }
