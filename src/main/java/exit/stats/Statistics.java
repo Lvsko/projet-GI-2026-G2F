@@ -30,8 +30,9 @@ public class Statistics {
 	 */
 	public void update(int ticks, ArrayList<Agent> agents) {
 		totalTicks = ticks;
+		evacuatedCount = 0;
 		for (Agent a : agents) {
-			if (a.getCurrentNode().equals(a.getDestinationNode())) {
+			if (a.getCurrentNode() != null && a.getCurrentNode().equals(a.getDestinationNode())) {
 				this.evacuatedCount += 1;
 			}
 		}
