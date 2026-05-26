@@ -51,6 +51,7 @@ public class SimulationEngine {
         for (Agent agent : agents) {
             moveAgent(agent);
         }
+        statistics.update(currentTick, (ArrayList<Agent>) agents);
     }
     /** Moves an agent one step forward */
     private void moveAgent(Agent agent) {
