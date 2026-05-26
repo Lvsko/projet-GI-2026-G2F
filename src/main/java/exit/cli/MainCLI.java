@@ -1,4 +1,4 @@
-package main.java.exit.cli;
+package exit.cli;
 import exit.cli.Menu;
 
 /**
