@@ -4,6 +4,8 @@ import exit.model.Graph;
 import exit.model.Node;
 import exit.model.Edge;
 import exit.model.enums.AgentType;
+import exit.model.enums.AgentState;
+import exit.model.enums.AgentBehavior;
 import exit.model.enums.NodeStatus;
 import exit.model.enums.NodeType;
 import exit.simulation.SimulationEngine;
@@ -135,28 +137,33 @@ public class Menu {
         System.out.println("Agent type? (ADULT, CHILD, PMR)");
         String typeStr = scanner.next();
         AgentType type = AgentType.valueOf(typeStr.toUpperCase());
-        
+        float speed;
+        if (type == AgentType.ADULT) {
+            speed = 1.0f;
+        } else if (type == AgentType.CHILD) {
+            speed = 0.7f;
+        } else {
+            speed = 0.5f;
+        }
 
         for (int i = 0; i < count; i++) {
-            Agent agent = new Agent(startNode, this.graph);
+            Agent agent = new Agent("agent" + (agents.size() + i), startNode, speed, AgentState.CALM, AgentBehavior.COOPERATIVE, type, 0.5f, this.graph);
             this.agents.add(agent);
             this.engine.addAgent(agent);
         }
         System.out.println(count + " agent(s) placed in " + startNode.getName());
     }
 
-    /**
-     * Advances the simulation by one tick.
-     * Not yet available, waiting for SimulationEngine implementation.
-     */
+  /**
+   * Advances the simulation by one tick and displays the current tick number.
+   */
     private void nextTick() {
     	engine.step();
     	System.out.println("Tick : " + engine.getCurrentTick());
     }
 
     /**
-     * Displays evacuation statistics.
-     * Not yet available, waiting for Statistics implementation.
+     * Displays the current evacuation statistics.
      */
     private void displayStats() {
     	System.out.println(engine.getStatistics());
