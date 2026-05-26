@@ -6,6 +6,7 @@ import exit.model.enums.AgentType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import exit.model.enums.AgentState;
 
 /**
  * Represents a person evacuating the building.
@@ -17,12 +18,17 @@ public class Agent {
     private Node currentNode;
     private Edge currentEdge;
     private Node destinationNode;
+<<<<<<< HEAD
     private float maxSpeed;
     private AgentState state;
     private AgentBehavior behavior;
     private AgentType type;
     private float densityTolerance;
 	private List<Node> currentPath = new ArrayList<>();
+=======
+    private AgentState state;
+    
+>>>>>>> 3c2c572 (Ajout du rendu des Agents dans GraphView)
     private static int numberAgent = 0;
 
     /**
@@ -50,6 +56,7 @@ public class Agent {
         this.behavior = behavior;
         this.type = type;
         this.densityTolerance = densityTolerance;
+        this.state = AgentState.CALM;
         if (startNode != null) {
             startNode.addAgent(this);
         }
@@ -176,5 +183,13 @@ public class Agent {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    public AgentState getState() {
+        return state;
+    }
+
+    public void setState(AgentState state) {
+        this.state = state;
     }
 }

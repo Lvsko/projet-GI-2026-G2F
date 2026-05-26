@@ -9,7 +9,14 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import exit.model.enums.NodeStatus;
 import exit.model.enums.NodeType;
-
+import exit.model.enums.AgentState;
+/**
+ * Handles the 2D rendering of the graph, agents and nodes.
+ * @author Leonardo
+ */
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +32,7 @@ public class GraphView {
 
     private List<Node> nodes = new ArrayList<>();
     private List<Edge> edges = new ArrayList<>();
+    private List<Agent> agents = new ArrayList<>();
 
     public GraphView(Canvas canvas) {
         this.canvas = canvas;
@@ -123,6 +131,16 @@ public class GraphView {
         	    1.0f,
         	    false
         	));
+        	Agent agent1 = new Agent(a, b);
+        	Agent agent2 = new Agent(b, c);
+        	Agent agent3 = new Agent(c, d);
+
+        	agents.add(agent1);
+        	agents.add(agent2);
+        	agents.add(agent3);
+        	
+        	agent2.setState(AgentState.PANICKED);
+        	agent3.setState(AgentState.INJURED);
     }
 
     public void drawGraph() {
@@ -132,10 +150,8 @@ public class GraphView {
         // Dessiner les arêtes
         gc.setStroke(Color.BLACK);
 
-
         for (Edge edge : edges) {
 
-            // pour l'épaisseur de la ligne
             gc.setLineWidth(edge.getWidth());
 
             double x1 = edge.getSource().getX() + 60;
@@ -144,17 +160,14 @@ public class GraphView {
             double x2 = edge.getTarget().getX() + 60;
             double y2 = edge.getTarget().getY() + 30;
 
-            // ligne principale
             gc.strokeLine(x1, y1, x2, y2);
 
-            // si la flèche est dirigée
             if(edge.isDirected()) {
 
                 double angle = Math.atan2(y2 - y1, x2 - x1);
 
                 double arrowLength = 15;
 
-                // position de la pointe de la flèche avant le rectangle
                 double arrowX = x2 - 30 * Math.cos(angle);
                 double arrowY = y2 - 30 * Math.sin(angle);
 
@@ -169,17 +182,18 @@ public class GraphView {
             }
         }
 
-        // Dessiner les nœuds
+        // Dessiner les noeuds
         for (Node node : nodes) {
 
-        	switch(node.getType()) {
+            switch(node.getType()) {
 
                 case ROOM:
                     gc.setFill(Color.LIGHTBLUE);
                     break;
+
                 case CORRIDOR:
-                	gc.setFill(Color.LIGHTGRAY);
-                	break;
+                    gc.setFill(Color.LIGHTGRAY);
+                    break;
 
                 case EXIT:
                     gc.setFill(Color.LIGHTGREEN);
@@ -188,26 +202,60 @@ public class GraphView {
                 case STAIRCASE:
                     gc.setFill(Color.ORANGE);
                     break;
+
                 default:
-                	gc.setFill(Color.BLACK);
+                    gc.setFill(Color.BLACK);
             }
 
+            gc.fillRect(node.getX(), node.getY(), 120, 60);
 
-            // Rectangle principal
-        	gc.fillRect(node.getX(), node.getY(), 120, 60);
-
-            // Bordure noire
             gc.setStroke(Color.BLACK);
             gc.strokeRect(node.getX(), node.getY(), 120, 60);
 
+<<<<<<< HEAD
             // Texte du noeud
             gc.setFill(Color.BLACK);
+=======
+            gc.setFill(Color.WHITE);
+
+>>>>>>> 3c2c572 (Ajout du rendu des Agents dans GraphView)
             gc.fillText(
-            	    node.getName(),
-            	    node.getX() + 20,
-            	    node.getY() + 35
-            	);
+                node.getName(),
+                node.getX() + 20,
+                node.getY() + 35
+            );
         }
+
+        // Dessiner les agents
+        for (Agent agent : agents) {
+
+            Node node = agent.getCurrentNode();
+
+            if (node != null) {
+
+                switch(agent.getState()) {
+
+                    case CALM:
+                        gc.setFill(Color.GREEN);
+                        break;
+
+                    case PANICKED:
+                        gc.setFill(Color.RED);
+                        break;
+
+                    case INJURED:
+                        gc.setFill(Color.YELLOW);
+                        break;
+
+                    default:
+                        gc.setFill(Color.BLACK);
+                }
+
+                double agentX = node.getX() + 50;
+                double agentY = node.getY() + 20;
+
+                gc.fillOval(agentX, agentY, 15, 15);
+            }
         }
     }
-
+}
