@@ -41,7 +41,7 @@ public class Agent implements Serializable {
      * @param type physical profile
      * @param densityTolerance tolerance to crowded areas
      */
-    public Agent(String id, Node startNode, float maxSpeed, AgentState state, AgentBehavior behavior, AgentType type, float densityTolerance, Agent graph) {
+    public Agent(String id, Node startNode, float maxSpeed, AgentState state, AgentBehavior behavior, AgentType type, float densityTolerance, Graph graph) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Identifier can't be empty");
         }
@@ -64,7 +64,7 @@ public class Agent implements Serializable {
      * Creates an agent with an identifier "agentN" and a starting node.
      * @param startNode   initial node of the agent
      */
-    public Agent(Node startNode, Agent graph) {
+    public Agent(Node startNode, Graph graph) {
     	this("agent"+numberAgent, startNode, 1.0f, AgentState.CALM, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f, graph);
     }
     
@@ -100,7 +100,7 @@ public class Agent implements Serializable {
      * @param graph     graph of the building
      * @return the best exit
      */
-    private Node chooseBestExit(Agent graph) {
+    private Node chooseBestExit(Graph graph) {
     	Pathfinder pathfinder = new Pathfinder();
     	Node bestExit = null;
     	float bestScore = Float.MAX_VALUE;
