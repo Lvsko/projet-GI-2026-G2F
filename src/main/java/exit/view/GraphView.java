@@ -9,17 +9,15 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import exit.model.enums.NodeStatus;
 import exit.model.enums.NodeType;
-/**
- * Handles the 2D rendering of the graph, agents and nodes.
- * @author Leonardo
- */
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
+
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Handles the 2D rendering of the graph, agents and nodes.
+ * @author Leonardo
+ */
 public class GraphView {
 
     private Canvas canvas;
@@ -203,7 +201,7 @@ public class GraphView {
             gc.strokeRect(node.getX(), node.getY(), 120, 60);
 
             // Texte du noeud
-            gc.setFill(Color.WHITE);
+            gc.setFill(Color.BLACK);
             gc.fillText(
             	    node.getName(),
             	    node.getX() + 20,
