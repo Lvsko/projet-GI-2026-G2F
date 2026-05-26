@@ -80,6 +80,17 @@ public class Graph {
         return null;
     }
 
+    /** Returns all nodes of a given type */
+    public List<Node> getNodesByType(NodeType type) {
+        List<Node> result = new ArrayList<>();
+        for (Node n : nodes) {
+            if (n.getType() == type) {
+                result.add(n);
+            }
+        }
+        return result;
+    }
+        
     public List<Node> getNodes() { return nodes; }
     public List<Edge> getEdges() { return edges; }
 }
