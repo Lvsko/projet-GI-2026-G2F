@@ -1,9 +1,11 @@
+package exit.cli;
 import exit.model.Agent;
 import exit.model.Graph;
 import exit.model.Node;
 import exit.model.Edge;
 import exit.model.enums.NodeStatus;
 import exit.model.enums.NodeType;
+import exit.simulation.SimulationEngine;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -17,6 +19,7 @@ public class Menu {
     private Graph graph;
     private List<Agent> agents;
     private Scanner scanner;
+    private SimulationEngine engine;
 
     /**
      * Creates a new Menu and initializes all components.
@@ -25,6 +28,7 @@ public class Menu {
         this.graph = new Graph();
         this.agents = new ArrayList<Agent>();
         this.scanner = new Scanner(System.in);
+        this.engine = new SimulationEngine(this.graph);
     }
 
     /**
@@ -86,6 +90,8 @@ public class Menu {
         this.graph.addEdge(new Edge("e4", r4, r5, 5, 1.0f, 1.0f, false));
         this.graph.addEdge(new Edge("e5", r2, r3, 5, 1.0f, 1.0f, false));
         this.graph.addEdge(new Edge("e6", r4, ex1, 2, 1.0f, 1.0f, false));
+        
+        this.engine = new SimulationEngine(this.graph);
     }
 
     /**
@@ -126,6 +132,7 @@ public class Menu {
         }
         Agent agent = new Agent(startNode, destination);
         this.agents.add(agent);
+        this.engine.addAgent(agent);
         System.out.println("Agent " + agent.getId() + " placed in " + startNode.getName());
     }
 
@@ -134,7 +141,8 @@ public class Menu {
      * Not yet available, waiting for SimulationEngine implementation.
      */
     private void nextTick() {
-        System.out.println("Simulation engine not available yet.");
+    	engine.step();
+    	System.out.println("Tick : " + engine.getCurrentTick());
     }
 
     /**
@@ -142,6 +150,6 @@ public class Menu {
      * Not yet available, waiting for Statistics implementation.
      */
     private void displayStats() {
-        System.out.println("Stats not available yet.");
+    	System.out.println(engine.getStatistics());
     }
 }
