@@ -78,17 +78,6 @@ public class Agent implements Serializable {
         );
     }
 
-    public Agent(Node startNode, Node destinationNode) {
-        this.id = "agent" + numberAgent++;
-        this.currentNode = startNode;
-        this.destinationNode = destinationNode;
-        this.currentEdge = null;
-        this.state = AgentState.CALM;
-
-        if (startNode != null) {
-            startNode.addAgent(this);
-        }
-    }
     
     /** 
      * @return the agent's identifier
