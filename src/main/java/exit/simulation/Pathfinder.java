@@ -117,6 +117,82 @@ public class Pathfinder {
         return finalPath;
     }
 
+    public List<Node> dijkstraTime(Node start, Node destination, Graph graph) {
+
+
+        Map<Node, Float> times = new HashMap<>();
+        Map<Node, Node> previousNodes = new HashMap<>();
+        List<Node> unvisitedNodes = new ArrayList<>();
+
+        for (Node node : graph.getNodes()) {
+            times.put(node, Float.MAX_VALUE);
+            unvisitedNodes.add(node);
+        }
+        times.put(start, 0f); // Time to reach start is 0
+
+        // --- STEP 2: FIND CLOSEST NODE (FASTEST CURRENT NODE) ---
+        while (!unvisitedNodes.isEmpty()) {
+
+            Node currentNode = null;
+            float smallestTime = Float.MAX_VALUE;
+
+            for (Node node : unvisitedNodes) {
+                if (times.get(node) <= smallestTime) {
+                    smallestTime = times.get(node);
+                    currentNode = node;
+                }
+            }
+
+            if (smallestTime == Float.MAX_VALUE) break;
+            unvisitedNodes.remove(currentNode);
+            if (currentNode.equals(destination)) break;
+
+            // --- STEP 3: UPDATE NEIGHBORS WITH CONGESTION FORMULA ---
+            List<Node> neighbors = graph.getNeighbors(currentNode);
+
+            for (Node neighbor : neighbors) {
+                if (!unvisitedNodes.contains(neighbor)) continue;
+                if (neighbor.getStatus() == NodeStatus.BLOCKED) continue;
+
+                Edge connectingEdge = findConnectingEdge(graph, currentNode, neighbor);
+                if (connectingEdge == null) continue;
+
+
+                // Formula from ticket: weight = distance / (speedModifier * (1 - occupancyRatio))
+                float distance = connectingEdge.getDistance();
+                float speedModifier = connectingEdge.getSpeedModifier(); // assuming getter exists
+                float occupancyRatio = connectingEdge.getOccupancy(); // assuming getter exists
+
+                // Time cost calculation targeting the congestion factor
+                float timeCost = distance / (speedModifier * (1.0f - occupancyRatio));
+
+                float newTime = times.get(currentNode) + timeCost;
+
+                if (newTime < times.get(neighbor)) {
+                    times.put(neighbor, newTime);
+                    previousNodes.put(neighbor, currentNode);
+                }
+            }
+        }
+
+
+        List<Node> finalPath = new ArrayList<>();
+        Node currentStep = destination;
+
+        if (previousNodes.get(currentStep) == null && !currentStep.equals(start)) {
+            return finalPath;
+        }
+
+        finalPath.add(currentStep);
+        while (previousNodes.containsKey(currentStep)) {
+            currentStep = previousNodes.get(currentStep);
+            finalPath.add(currentStep);
+        }
+
+        Collections.reverse(finalPath);
+        return finalPath;
+    }
+
     protected Edge findConnectingEdge(Graph graph, Node currentNode, Node neighbor) {
 
         // We look at every edge in the graph
