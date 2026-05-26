@@ -38,7 +38,7 @@ public class Agent {
      * @param type physical profile
      * @param densityTolerance tolerance to crowded areas
      */
-    public Agent(String id, Node startNode, float maxSpeed, AgentState state, AgentBehavior behavior, AgentType type, float densityTolerance, Graph graph, List<Node> exits) {
+    public Agent(String id, Node startNode, float maxSpeed, AgentState state, AgentBehavior behavior, AgentType type, float densityTolerance, Graph graph) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Identifier can't be empty");
         }
@@ -51,7 +51,7 @@ public class Agent {
         this.behavior = behavior;
         this.type = type;
         this.densityTolerance = densityTolerance;
-		this.destinationNode = chooseBestExit(graph, exits);
+		this.destinationNode = chooseBestExit(graph);
         if (startNode != null) {
             startNode.addAgent(this);
         }
@@ -61,8 +61,8 @@ public class Agent {
      * Creates an agent with an identifier "agentN" and a starting node.
      * @param startNode   initial node of the agent
      */
-    public Agent(Node startNode, Graph graph, List<Node> exits) {
-    	this("agent"+numberAgent, startNode, 1.0f, AgentState.CALM, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f, graph, exits);
+    public Agent(Node startNode, Graph graph) {
+    	this("agent"+numberAgent, startNode, 1.0f, AgentState.CALM, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f, graph);
     }
     
     /** 
@@ -98,12 +98,12 @@ public class Agent {
      * @param exits     the list of nodes of type EXIT
      * @retur the best exit
      */
-    private Node chooseBestExit(Graph graph, List<Node> exits) {
+    private Node chooseBestExit(Graph graph) {
     	Pathfinder pathfinder = new Pathfinder();
     	Node bestExit = null;
     	float bestScore = Float.MAX_VALUE;
 
-    	for (Node exit : exits) {
+    	for (Node exit :  graph.getNodesByType(NodeType.EXIT)) {
         	List<Node> path = state == AgentState.PANICKED
             	? pathfinder.dijkstraDistance(currentNode, exit, graph)
             	: pathfinder.dijkstraTime(currentNode, exit, graph);
@@ -111,7 +111,6 @@ public class Agent {
         	if (path.isEmpty()) continue; // inaccessible exit
 
         	float score = path.size();
-
         	if (score < bestScore) {
             bestScore = score;
             bestExit = exit;
