@@ -1,10 +1,13 @@
-package exit.model;
+package model.agent;
 
-import exit.model.enums.AgentBehavior;
-import exit.model.enums.AgentState;
-import exit.model.enums.AgentType;
-import exit.model.enums.NodeType;
-import exit.simulation.Pathfinder;
+import model.agent.AgentBehavior;
+import model.agent.AgentState;
+import model.agent.AgentType;
+import model.node.NodeType;
+import model.Edge;
+import model.Graph;
+import model.Node;
+import simulation.Pathfinder;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
