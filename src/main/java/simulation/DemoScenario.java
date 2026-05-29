@@ -1,4 +1,4 @@
-package exit.simulation;
+package simulation;
 /**
  * Provides predefined simulation scenarios for the demo mode.
  * Includes best case, average case and worst case scenarios.
