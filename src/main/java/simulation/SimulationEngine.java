@@ -1,10 +1,11 @@
-package exit.simulation;
+package simulation;
 
-import exit.model.Agent;
-import exit.model.Edge;
-import exit.model.Graph;
-import exit.model.Node;
-import exit.stats.Statistics;
+import model.Graph;
+import model.node.Node;
+import model.Edge;
+import model.agent.Agent;
+import model.agent.AgentState;
+import simulation.Statistics;
 import java.util.ArrayList;
 import java.util.List;
 
