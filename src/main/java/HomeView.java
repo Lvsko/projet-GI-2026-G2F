@@ -1,4 +1,4 @@
-package exit.view;
+package view;
 /**
  * Home screen of the EXIT application.
  * Displays the main menu with Demo and Manual Configuration options.
