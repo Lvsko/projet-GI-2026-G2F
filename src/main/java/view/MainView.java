@@ -1,6 +1,7 @@
-package exit.view;
-import exit.model.Agent;
-import exit.simulation.SimulationEngine;
+package view;
+
+import model.agent.Agent;
+import simulation.SimulationEngine;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Scene;
