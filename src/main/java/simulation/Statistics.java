@@ -1,10 +1,11 @@
-package exit.stats;
+package simulation;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import exit.model.Agent;
-import exit.model.Edge;
+import model.agent.Agent;
+import model.node.Node;
+import model.Edge;
 
 /**
  * Tracks and computes evacuation statistics during the simulation.
