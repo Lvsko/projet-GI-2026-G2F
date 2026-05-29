@@ -1,5 +1,6 @@
-package exit.model;
+package model;
 
+import model.node.Node;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
