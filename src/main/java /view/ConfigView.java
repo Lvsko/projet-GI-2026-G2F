@@ -1,4 +1,4 @@
-package exit.view;
+package view;
 /**
  * Manual configuration screen.
  * Allows the user to build a custom graph and launch a simulation.
