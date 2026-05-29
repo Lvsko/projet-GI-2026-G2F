@@ -1,14 +1,15 @@
-package exit.cli;
-import exit.model.Agent;
-import exit.model.Graph;
-import exit.model.Node;
-import exit.model.Edge;
-import exit.model.enums.AgentType;
-import exit.model.enums.AgentState;
-import exit.model.enums.AgentBehavior;
-import exit.model.enums.NodeStatus;
-import exit.model.enums.NodeType;
-import exit.simulation.SimulationEngine;
+package cli;
+
+import model.agent.Agent;
+import model.Graph;
+import model.node.Node;
+import model.Edge;
+import model.agent.AgentType;
+import model.agent.AgentState;
+import model.agent.AgentBehavior;
+import model.node.NodeStatus;
+import model.node.NodeType;
+import simulation.SimulationEngine;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
