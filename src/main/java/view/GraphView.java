@@ -1,15 +1,16 @@
-package exit.view;
-import exit.model.Graph;
-import exit.model.Node;
-import exit.model.Edge;
-import exit.model.Agent;
-import exit.simulation.SimulationEngine;
+package view;
+
+import model.Graph;
+import model.node.Node;
+import model.Edge;
+import model.agent.Agent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
-import exit.model.enums.NodeStatus;
-import exit.model.enums.NodeType;
-import exit.model.enums.AgentState;
+import model.agent.AgentState;
+import model.node.NodeStatus;
+import model.node.NodeType;
+import simulation.SimulationEngine;
 import java.util.ArrayList;
 import java.util.List;
 /**
