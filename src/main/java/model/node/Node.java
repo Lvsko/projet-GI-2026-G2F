@@ -1,7 +1,8 @@
-package exit.model;
+package model.node;
 
-import exit.model.enums.NodeStatus;
-import exit.model.enums.NodeType;
+import model.agent.AgentState;
+import model.node.NodeStatus;
+import model.node.NodeType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
