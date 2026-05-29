@@ -1,8 +1,9 @@
-package exit.simulation;
-import exit.model.Edge;
-import exit.model.Graph;
-import exit.model.Node;
-import exit.model.enums.NodeStatus;
+package simulation;
+
+import model.Graph;
+import model.Node;
+import model.Edge;
+import model.node.NodeType;
 
 import java.util.*;
 /**
