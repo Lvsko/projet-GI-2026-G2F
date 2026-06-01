@@ -50,6 +50,8 @@ public class Edge implements Serializable {
     public void removeAgent(Agent agent) {
         agents.remove(agent);
     }
+    
+    public void setWidth(int width) { this.width = width; }
 
     public String getId() { return id; }
     public Node getSource() { return source; }
