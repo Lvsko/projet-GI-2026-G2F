@@ -6,7 +6,7 @@ import model.Edge;
 import model.agent.Agent;
 import model.agent.AgentType;
 import model.agent.AgentState;
-import simulation.Statistics;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
@@ -71,7 +71,7 @@ public class SimulationEngine {
             case PMR:   canMove = (counter % 2) == 0; break;
             default:    canMove = true;
         }
-        if canMove {
+        if (canMove) {
             if (agent.isInTransit()) {
                 // agent is in an edge, make it arrive at the target node
                 agent.arriveAt(agent.getCurrentEdge().getTarget());
