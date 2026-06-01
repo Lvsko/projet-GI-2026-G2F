@@ -79,7 +79,9 @@ public class HomeView extends Application {
             "-fx-cursor: hand;"
         );
         configButton.setOnAction(e -> {
-            // TODO : ouvrir ConfigView
+            stage.close();
+            Stage configStage = new Stage();
+            new ConfigView().start(configStage);
         });
 
         HBox buttons = new HBox(24, demoButton, configButton);
