@@ -67,7 +67,7 @@ public class SimulationEngine {
 
         boolean canMove;
         switch (agent.getType()) {
-            case CHILD: canMove = (counter % 10) < 7; break;
+            case CHILD: canMove = (counter % 10) != 2 && (counter % 10) != 5 && (counter % 10) != 9; break; // move 7 ticks out of 10
             case PMR:   canMove = (counter % 2) == 0; break;
             default:    canMove = true;
         }
