@@ -4,10 +4,13 @@ import model.Graph;
 import model.node.Node;
 import model.Edge;
 import model.agent.Agent;
+import model.agent.AgentType;
 import model.agent.AgentState;
 import simulation.Statistics;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Controls the simulation loop and manages agent movements at each tick.
@@ -20,6 +23,7 @@ public class SimulationEngine {
     private Statistics statistics;
     private boolean running;
     private int currentTick;
+    private Map<Agent, Integer> tickCounters;
 
     public SimulationEngine(Graph graph) {
         this.graph = graph;
@@ -27,6 +31,7 @@ public class SimulationEngine {
         this.statistics = new Statistics();
         this.running = false;
         this.currentTick = 0;
+        this.tickCounters = new HashMap<>();
     }
 
     /** Starts the simulation */
@@ -44,6 +49,7 @@ public class SimulationEngine {
         running = false;
         currentTick = 0;
         agents.clear();
+        tickCounters.clear();
     }
 
     /** Advances the simulation by one tick */
@@ -56,20 +62,32 @@ public class SimulationEngine {
     }
     /** Moves an agent one step forward */
     private void moveAgent(Agent agent) {
-        if (agent.isInTransit()) {
-            // agent is in an edge, make it arrive at the target node
-            agent.arriveAt(agent.getCurrentEdge().getTarget());
-        } else if (!agent.getCurrentPath().isEmpty()) {
-            // agent is in a node, find the next edge
-            Node nextNode = agent.getCurrentPath().get(0);
-            Edge edge = findEdge(agent.getCurrentNode(), nextNode);
-            if (edge != null && edge.isAvailable()) {
-                if (agent.moveToEdge(edge)) {
-                    agent.getCurrentPath().remove(0);
+        int counter = tickCounters.get(agent);
+        tickCounters.put(agent, counter + 1);
+
+        boolean canMove;
+        switch (agent.getType()) {
+            case CHILD: canMove = (counter % 10) < 7; break;
+            case PMR:   canMove = (counter % 2) == 0; break;
+            default:    canMove = true;
+        }
+        if canMove {
+            if (agent.isInTransit()) {
+                // agent is in an edge, make it arrive at the target node
+                agent.arriveAt(agent.getCurrentEdge().getTarget());
+            } else if (!agent.getCurrentPath().isEmpty()) {
+                // agent is in a node, find the next edge
+                Node nextNode = agent.getCurrentPath().get(0);
+                Edge edge = findEdge(agent.getCurrentNode(), nextNode);
+                if (edge != null && edge.isAvailable()) {
+                    if (agent.moveToEdge(edge)) {
+                        agent.getCurrentPath().remove(0);
+                    }
                 }
             }
         }
     }
+    
     /** Finds the edge connecting two nodes */
     private Edge findEdge(Node from, Node to) {
         for (Edge edge : graph.getEdges()) {
@@ -87,11 +105,13 @@ public class SimulationEngine {
     /** Adds an agent to the simulation */
     public void addAgent(Agent agent) {
         agents.add(agent);
+        tickCounters.put(agent, 0);
     }
 
     /** Removes an agent from the simulation */
     public void removeAgent(Agent agent) {
         agents.remove(agent);
+        tickCounters.remove(agent);
     }
 
     public Graph getGraph() { return graph; }
