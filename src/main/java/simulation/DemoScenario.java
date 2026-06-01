@@ -1,5 +1,16 @@
 package simulation;
 
+import model.Graph;
+import model.node.Node;
+import model.node.NodeType;
+import model.node.NodeStatus;
+import model.Edge;
+import model.agent.Agent;
+import model.agent.AgentState;
+import model.agent.AgentBehavior;
+import model.agent.AgentType;
+import java.util.ArrayList;
+import java.util.List;
 /**
  * Provides predefined simulation scenarios for the demo mode.
  * Includes best case, average case and worst case scenarios.
