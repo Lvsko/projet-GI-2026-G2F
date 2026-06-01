@@ -53,9 +53,10 @@ public class HomeView extends Application {
             "-fx-cursor: hand;"
         );
         demoButton.setOnAction(e -> {
-            // TODO : ouvrir la sélection de scénario
+            stage.close();
+            Stage selectorStage = new Stage();
+            new ScenarioSelectorView().start(selectorStage);
         });
-
         // Config button
         Label configTitle = new Label("Configuration");
         configTitle.setFont(Font.font("Georgia", FontWeight.BOLD, 17));
