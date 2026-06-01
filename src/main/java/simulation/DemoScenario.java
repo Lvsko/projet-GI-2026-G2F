@@ -45,7 +45,16 @@ public class DemoScenario {
             int count = (int) (node.getMaxCapacity() * fillRatio);
 
             for (int i = 0; i < count; i++) {
-                AgentState agentState = (state != null) ? state : (index % 2 == 0 ? AgentState.CALM : AgentState.INJURED);
+                AgentState agentState;
+                if (state != null) {
+                    agentState = state;
+                } else {
+                    if (index % 2 == 0) {
+                        agentState = AgentState.CALM;  
+                    } else {
+                        agentState = AgentState.INJURED; 
+                    }
+                }
                 agents.add(new Agent("agent_" + node.getId() + "_" + i, node, 1.0f, agentState, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f, g));
                 index++;
             }
