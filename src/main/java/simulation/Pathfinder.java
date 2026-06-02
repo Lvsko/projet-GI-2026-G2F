@@ -1,8 +1,9 @@
 package simulation;
 
 import model.Graph;
-import model.Node;
 import model.Edge;
+import model.node.Node;
+import model.node.NodeStatus;
 import model.node.NodeType;
 
 import java.util.*;

@@ -6,6 +6,7 @@ import java.util.List;
 import model.node.Node;
 import model.node.NodeType;
 import model.Edge;
+import model.agent.Agent;
 
 /**
  * Main structure of the building, contains all nodes and edges.

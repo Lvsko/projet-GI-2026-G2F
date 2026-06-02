@@ -1,5 +1,5 @@
 package model.node;
-
+import model.agent.Agent;
 import model.agent.AgentState;
 import model.node.NodeStatus;
 import model.node.NodeType;

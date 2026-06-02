@@ -55,13 +55,23 @@ public class SimulationEngine {
     /** Advances the simulation by one tick */
     public void step() {
         currentTick++;
+
+        List<Agent> evacuatedAgents = new ArrayList<>();
+
         for (Agent agent : agents) {
-            moveAgent(agent);
+            if (moveAgent(agent)) {
+                evacuatedAgents.add(agent);
+            }
         }
+
+        for (Agent agent : evacuatedAgents) {
+            removeAgent(agent);
+        }
+
         statistics.update(currentTick, (ArrayList<Agent>) agents);
     }
     /** Moves an agent one step forward */
-    private void moveAgent(Agent agent) {
+    private boolean moveAgent(Agent agent) {
         int counter = tickCounters.get(agent);
         tickCounters.put(agent, counter + 1);
 
@@ -71,12 +81,28 @@ public class SimulationEngine {
             case PMR:   canMove = (counter % 2) == 0; break;
             default:    canMove = true;
         }
-        if canMove {
+        if (canMove) {
             if (agent.isInTransit()) {
-                // agent is in an edge, make it arrive at the target node
-                agent.arriveAt(agent.getCurrentEdge().getTarget());
+
+            	Edge edge = agent.getCurrentEdge();
+
+            	Node destination;
+
+            	if (edge.getSource().equals(agent.getPreviousNode())) {
+            	    destination = edge.getTarget();
+            	} else {
+            	    destination = edge.getSource();
+            	}
+                agent.arriveAt(destination);
+
+                if (destination.getType() == model.node.NodeType.EXIT) {
+                	destination.removeAgent(agent);
+                    return true;
+                }
+
             } else if (!agent.getCurrentPath().isEmpty()) {
                 // agent is in a node, find the next edge
+            	
                 Node nextNode = agent.getCurrentPath().get(0);
                 Edge edge = findEdge(agent.getCurrentNode(), nextNode);
                 if (edge != null && edge.isAvailable()) {
@@ -86,6 +112,7 @@ public class SimulationEngine {
                 }
             }
         }
+        return false;
     }
     
     /** Finds the edge connecting two nodes */
@@ -110,6 +137,11 @@ public class SimulationEngine {
 
     /** Removes an agent from the simulation */
     public void removeAgent(Agent agent) {
+
+        if (agent.getCurrentNode() != null) {
+            agent.getCurrentNode().removeAgent(agent);
+        }
+
         agents.remove(agent);
         tickCounters.remove(agent);
     }

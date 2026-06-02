@@ -247,7 +247,10 @@ public class GraphView {
         }
 
         // Draw agents — offset circles so multiple agents are visible
-        for (Agent agent : agents) {
+        List<Agent> agentsToDraw =
+                (engine != null) ? engine.getAgents() : agents;
+
+        for (Agent agent : agentsToDraw) {
             Node node = agent.getCurrentNode();
             if (node != null) {
                 switch(agent.getState()) {
@@ -281,7 +284,11 @@ public class GraphView {
             gc.fillText("Agents: " + selectedNode.getOccupancy(), 620, 200);
         }
     }
-
+    
+    public void removeAgent(Agent agent) {
+        agents.remove(agent);
+    }
     public Graph getGraph() { return graph; }
     public List<Agent> getAgents() { return agents; }
+    
 }

@@ -6,7 +6,7 @@ import model.agent.AgentType;
 import model.node.NodeType;
 import model.Edge;
 import model.Graph;
-import model.Node;
+import model.node.Node;
 import simulation.Pathfinder;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class Agent implements Serializable {
     private AgentType type;
     private float densityTolerance;
 	private List<Node> currentPath = new ArrayList<>();
-    
+	private Node previousNode;
     private static int numberAgent = 0;
 
     /**
@@ -151,6 +151,7 @@ public class Agent implements Serializable {
             return false;
         }
         if (this.currentNode != null) {
+            this.previousNode = this.currentNode;
             this.currentNode.removeAgent(this);
             this.currentNode = null;
         }
@@ -165,6 +166,7 @@ public class Agent implements Serializable {
      */
     public void arriveAt(Node node) {
         // Quitte l'arête actuelle
+    	
         if (this.currentEdge != null) {
             this.currentEdge.removeAgent(this);
             this.currentEdge = null;
@@ -199,6 +201,10 @@ public class Agent implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+    
+    public Node getPreviousNode() {
+        return previousNode;
     }
 
 }
