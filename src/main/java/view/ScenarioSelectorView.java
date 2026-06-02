@@ -1,5 +1,10 @@
 package view;
 
+import model.Graph;
+import model.agent.Agent;
+import simulation.DemoScenario;
+import java.util.List;
+
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -51,7 +56,10 @@ public class ScenarioSelectorView extends Application {
         );
         bestButton.setOnAction(e -> {
             stage.close();
-            // TODO : lancer MainView avec DemoScenario.bestCase()
+            Graph g = DemoScenario.createGraph();
+            List<Agent> agents = DemoScenario.bestCase();
+            Stage simStage = new Stage();
+            new MainView(g, agents).start(simStage);
         });
 
         // Average Case
@@ -73,7 +81,10 @@ public class ScenarioSelectorView extends Application {
         );
         avgButton.setOnAction(e -> {
             stage.close();
-            // TODO : lancer MainView avec DemoScenario.averageCase()
+            Graph g = DemoScenario.createGraph();
+            List<Agent> agents = DemoScenario.averageCase();
+            Stage simStage = new Stage();
+            new MainView(g, agents).start(simStage);
         });
 
         // Worst Case
@@ -95,9 +106,11 @@ public class ScenarioSelectorView extends Application {
         );
         worstButton.setOnAction(e -> {
             stage.close();
-            // TODO : lancer MainView avec DemoScenario.worstCase()
+            Graph g = DemoScenario.createGraph();
+            List<Agent> agents = DemoScenario.worstCase();
+            Stage simStage = new Stage();
+            new MainView(g, agents).start(simStage);
         });
-
         HBox buttons = new HBox(20, bestButton, avgButton, worstButton);
         buttons.setAlignment(Pos.CENTER);
 
