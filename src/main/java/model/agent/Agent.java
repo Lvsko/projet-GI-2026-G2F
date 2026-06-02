@@ -107,39 +107,66 @@ public class Agent implements Serializable {
 	public List<Node> getCurrentPath() { return currentPath; }
 	public void setCurrentPath(List<Node> path) { this.currentPath = path; }
 	
-	    /**
+    /**
      * Automatically chooses the best output according to the agent's state.
      * - CALM / INJURED    → optimal exit via dijkstraTime 
      * - PANICKED → nearest exit via dijkstraDistance 
      * @param graph     graph of the building
      * @return the best exit
      */
+
     private Node chooseBestExit(Graph graph) {
-    	Pathfinder pathfinder = new Pathfinder();
-    	Node bestExit = null;
-    	float bestScore = Float.MAX_VALUE;
-		List<Node> bestPath = new ArrayList<>();
-		
-    	for (Node exit :  graph.getNodesByType(NodeType.EXIT)) {
-        	List<Node> path = state == AgentState.PANICKED
-            	? pathfinder.dijkstraDistance(currentNode, exit, graph)
-            	: pathfinder.dijkstraTime(currentNode, exit, graph);
+        Pathfinder pathfinder = new Pathfinder();
+        Node bestExit = null;
+        float bestScore = Float.MAX_VALUE;
+        List<Node> bestPath = new ArrayList<>();
 
-        	if (path.isEmpty()) continue; // inaccessible exit
+        // We get all exits directly from the graph
+        for (Node exit : graph.getNodesByType(NodeType.EXIT)) {
 
-        	float score = path.size();
-        	if (score < bestScore) {
-            	bestScore = score;
-            	bestExit = exit;
-				bestPath = path;
-        	}
-    	}
-		if (!bestPath.isEmpty()) {
-        	bestPath.remove(0);
-		}
-		this.currentPath = bestPath;
-    	return bestExit;
-	}
+            // 1. Generate path based on psychological state (Original logic)
+            List<Node> path = state == AgentState.PANICKED
+                    ? pathfinder.dijkstraDistance(currentNode, exit, graph)
+                    : pathfinder.dijkstraTime(currentNode, exit, graph);
+
+            if (path == null || path.isEmpty()) continue; // inaccessible exit
+
+            // 2. KAN-37: Calculate the congestionFactor (sum of occupancies)
+            float congestionFactor = 0f;
+
+            for (int i = 0; i < path.size() - 1; i++) {
+                Node u = path.get(i);
+                Node v = path.get(i + 1);
+
+                Edge edge = pathfinder.findConnectingEdge(graph, u, v);
+                if (edge != null) {
+                    congestionFactor += edge.getOccupancy();
+                }
+            }
+
+            // 3. Apply the formula from the Jira ticket
+            float score = path.size() + congestionFactor;
+
+            // 4. Keep the lowest score
+            if (score < bestScore) {
+                bestScore = score;
+                bestExit = exit;
+                // Create a copy to avoid reference manipulation issues
+                bestPath = new ArrayList<>(path);
+            }
+        }
+
+        // 5. Remove the starting node so the agent doesn't stay in place
+        if (!bestPath.isEmpty()) {
+            bestPath.remove(0);
+        }
+
+        this.currentPath = bestPath;
+        return bestExit;
+    }
+
+
+
 
 	/**
      * Moves the agent to a neighboring edge.
@@ -206,5 +233,7 @@ public class Agent implements Serializable {
     public Node getPreviousNode() {
         return previousNode;
     }
+
+
 
 }

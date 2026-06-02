@@ -198,7 +198,7 @@ public class Pathfinder {
         return finalPath;
     }
 
-    protected Edge findConnectingEdge(Graph graph, Node currentNode, Node neighbor) {
+    public Edge findConnectingEdge(Graph graph, Node currentNode, Node neighbor) {
 
         // We look at every edge in the graph
         // (Assuming you added a getEdges() method to the Graph class)
