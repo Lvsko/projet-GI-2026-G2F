@@ -30,6 +30,7 @@ public class MainView extends Application {
 
         AnimationTimer timer = new AnimationTimer() {
             private long lastTick = 0;
+
             @Override
             public void handle(long now) {
                 if (engine.isRunning() && now - lastTick >= 2_000_000_000L) {
@@ -73,7 +74,13 @@ public class MainView extends Application {
         removeNodeButton.setLayoutY(10);
         removeNodeButton.setOnAction(e -> renderer.removeSelectedNode());
 
-        Pane root = new Pane(canvas, pauseButton, spawnButton, addNodeButton, removeNodeButton);
+        //Button Configuration
+        Button configButton = new Button("Configure");
+        configButton.setLayoutX(420);
+        configButton.setLayoutY(10);
+        configButton.setOnAction(e -> new ConfigView(renderer.getGraph(), renderer).show());
+
+        Pane root = new Pane(canvas, pauseButton, spawnButton, addNodeButton, removeNodeButton, configButton);
         Scene scene = new Scene(root, 800, 610);
         stage.setTitle("EXIT Simulation");
         stage.setScene(scene);
