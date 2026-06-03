@@ -1,4 +1,4 @@
-package exit.model.enums;
+package model.node;
 
 /**
  * Represents the accessibility status of a node.

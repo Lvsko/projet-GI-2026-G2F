@@ -1,4 +1,4 @@
-package exit.model.enums;
+package model.agent;
 
 /**
  * Represents the movement behavior of an agent towards others.

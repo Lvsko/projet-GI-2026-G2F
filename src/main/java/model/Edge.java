@@ -1,5 +1,7 @@
-package exit.model;
+package model;
 
+import model.node.Node;
+import model.agent.Agent;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +51,8 @@ public class Edge implements Serializable {
     public void removeAgent(Agent agent) {
         agents.remove(agent);
     }
+    
+    public void setWidth(int width) { this.width = width; }
 
     public String getId() { return id; }
     public Node getSource() { return source; }

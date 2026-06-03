@@ -1,6 +1,12 @@
-package exit.view;
-import exit.model.Agent;
-import exit.simulation.SimulationEngine;
+package view;
+
+import model.Graph;
+import model.node.Node;
+import model.node.NodeStatus;
+import model.node.NodeType;
+import model.Edge;
+import model.agent.Agent;
+import simulation.SimulationEngine;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -8,21 +14,34 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import java.util.List;
 /**
  * Main JavaFX view of the EXIT application.
  * @author Leonardo
  */
 public class MainView extends Application {
+    
+    private Graph graph;
+    private List<Agent> agents;
+
+    public MainView() {}
+
+    public MainView(Graph graph, List<Agent> agents) {
+        this.graph = graph;
+        this.agents = agents;
+    }
+    
+    
     @Override
     public void start(Stage stage) {
         Canvas canvas = new Canvas(800, 560);
         canvas.setLayoutY(50);
 
-        GraphView renderer = new GraphView(canvas);
+        GraphView renderer = new GraphView(canvas, graph);
         renderer.drawGraph();
 
-        SimulationEngine engine = new SimulationEngine(renderer.getGraph());
-        for (Agent agent : renderer.getAgents()) {
+        SimulationEngine engine = new SimulationEngine(graph);
+        for (Agent agent : agents) {
             engine.addAgent(agent);
         }
         renderer.setEngine(engine);

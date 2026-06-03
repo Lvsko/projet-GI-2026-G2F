@@ -1,0 +1,112 @@
+package simulation;
+import java.util.ArrayList;
+import java.util.List;
+
+import model.Graph;
+import model.Edge;
+import model.node.Node;
+import model.node.NodeType;
+import model.node.NodeStatus;
+
+import model.agent.Agent;
+import model.agent.AgentState;
+import model.agent.AgentBehavior;
+import model.agent.AgentType;
+
+
+/**
+ * Provides predefined simulation scenarios for the demo mode.
+ * Includes best case, average case and worst case scenarios.
+ * @author Clement
+ */
+public class DemoScenario {
+
+
+    public static Graph createGraph() {
+        Graph g = new Graph();
+        Node n1 = new Node("N1", "Room A",     50,  50,  10, NodeStatus.OPEN, NodeType.ROOM,      1.0f);
+        Node n2 = new Node("N2", "Corridor 1", 250, 50,  10, NodeStatus.OPEN, NodeType.CORRIDOR,  1.0f);
+        Node n3 = new Node("N3", "Room B",     450, 50,  10, NodeStatus.OPEN, NodeType.ROOM,      1.0f);
+        Node n4 = new Node("N4", "Staircase",  450, 250, 10, NodeStatus.OPEN, NodeType.STAIRCASE, 1.0f);
+        Node n5 = new Node("N5", "Corridor 2", 250, 250, 10, NodeStatus.OPEN, NodeType.CORRIDOR,  1.0f);
+        Node n6 = new Node("N6", "Room C",     50,  250, 10, NodeStatus.OPEN, NodeType.ROOM,      1.0f);
+        Node n7 = new Node("N7", "Exit",       250, 420, 10, NodeStatus.OPEN, NodeType.EXIT,      1.0f);
+        g.addNode(n1); g.addNode(n2); g.addNode(n3);
+        g.addNode(n4); g.addNode(n5); g.addNode(n6); g.addNode(n7);
+        g.addEdge(new Edge("E1", n1, n2, 5, 1.0f, 1.0f, false));
+        g.addEdge(new Edge("E2", n2, n3, 5, 1.0f, 1.0f, false));
+        g.addEdge(new Edge("E3", n3, n4, 5, 1.0f, 1.0f, false));
+        g.addEdge(new Edge("E4", n4, n5, 5, 1.0f, 1.0f, false));
+        g.addEdge(new Edge("E5", n5, n6, 5, 1.0f, 1.0f, false));
+        g.addEdge(new Edge("E6", n5, n7, 1, 1.0f, 1.0f, false));
+        g.addEdge(new Edge("E7", n2, n5, 5, 1.0f, 1.0f, false));
+        return g;
+    }
+    /**
+     * Best case : all agents are CALM, all exits open, nodes filled at 50%.
+     */
+    public static List<Agent> bestCase() {
+        Graph g = createGraph();
+        return createAgents(g, 0.5f, AgentState.CALM, null, null);
+    }
+
+    /**
+     * Average case : mix CALM/INJURED, one edge reduced, nodes filled at 50%.
+     */
+    public static List<Agent> averageCase() {
+        Graph g = createGraph();
+        for (Edge e : g.getEdges()) {
+            if (e.getId().equals("E6")) {
+                e.setWidth(1);
+                break;
+            }
+        }
+        return createAgents(g, 0.5f, null, null, null);  // null = alternates CALM/INJURED
+    }
+
+    /**
+     * Worst case : all agents PANICKED, one exit blocked, nodes filled at 70%.
+     */
+    public static List<Agent> worstCase() {
+        Graph g = createGraph();
+        for (Node n : g.getNodes()) {
+            if (n.getType() == NodeType.EXIT) {
+                n.setStatus(NodeStatus.BLOCKED);
+                break;
+            }
+        }
+        return createAgents(g, 0.7f, AgentState.PANICKED, null, null);
+    }
+
+    /**
+     * Fills non-EXIT nodes at the given ratio and creates agents.
+     * @param state if null, alternates CALM/INJURED
+     * @return list of agents placed on the graph
+     */
+    private static List<Agent> createAgents(Graph g, float fillRatio, AgentState state, AgentBehavior behavior, AgentType type) {
+        List<Agent> agents = new ArrayList<>();
+        int index = 0;
+
+        for (Node node : g.getNodes()) {
+            if (node.getType() == NodeType.EXIT) continue;
+
+            int count = (int) (node.getMaxCapacity() * fillRatio);
+
+            for (int i = 0; i < count; i++) {
+                AgentState agentState;
+                if (state != null) {
+                    agentState = state;
+                } else {
+                    if (index % 2 == 0) {
+                        agentState = AgentState.CALM;  
+                    } else {
+                        agentState = AgentState.INJURED; 
+                    }
+                }
+                agents.add(new Agent("agent_" + node.getId() + "_" + i, node, 1.0f, agentState, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f, g));
+                index++;
+            }
+        }
+        return agents;
+    }
+}

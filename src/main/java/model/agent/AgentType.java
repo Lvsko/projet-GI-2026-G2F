@@ -1,4 +1,4 @@
-package exit.model.enums;
+package model.agent;
 
 /**
  * Represents the physical profile of an agent.

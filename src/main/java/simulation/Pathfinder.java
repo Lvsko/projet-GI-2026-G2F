@@ -1,8 +1,10 @@
-package exit.simulation;
-import exit.model.Edge;
-import exit.model.Graph;
-import exit.model.Node;
-import exit.model.enums.NodeStatus;
+package simulation;
+
+import model.Graph;
+import model.Edge;
+import model.node.Node;
+import model.node.NodeStatus;
+import model.node.NodeType;
 
 import java.util.*;
 /**
@@ -196,7 +198,7 @@ public class Pathfinder {
         return finalPath;
     }
 
-    protected Edge findConnectingEdge(Graph graph, Node currentNode, Node neighbor) {
+    public Edge findConnectingEdge(Graph graph, Node currentNode, Node neighbor) {
 
         // We look at every edge in the graph
         // (Assuming you added a getEdges() method to the Graph class)

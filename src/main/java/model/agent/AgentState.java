@@ -1,4 +1,4 @@
-package exit.model.enums;
+package model.agent;
 
 /**
  * Represents the psychological state of an agent during evacuation.

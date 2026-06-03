@@ -1,7 +1,7 @@
-package exit.io;
+package simulation;
 
-import exit.model.Agent;
-import exit.model.Graph;
+import model.Graph;
+import model.agent.Agent;
 import java.io.*;
 import java.util.List;
 /**

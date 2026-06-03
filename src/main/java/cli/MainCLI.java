@@ -1,5 +1,5 @@
-package exit.cli;
-import exit.cli.Menu;
+package cli;
+import cli.Menu;
 
 /**
  * Entry point for the command-line version of the EXIT simulation.

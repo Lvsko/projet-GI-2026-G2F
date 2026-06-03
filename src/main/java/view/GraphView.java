@@ -1,15 +1,16 @@
-package exit.view;
-import exit.model.Graph;
-import exit.model.Node;
-import exit.model.Edge;
-import exit.model.Agent;
-import exit.simulation.SimulationEngine;
+package view;
+
+import model.Graph;
+import model.node.Node;
+import model.Edge;
+import model.agent.Agent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
-import exit.model.enums.NodeStatus;
-import exit.model.enums.NodeType;
-import exit.model.enums.AgentState;
+import model.agent.AgentState;
+import model.node.NodeStatus;
+import model.node.NodeType;
+import simulation.SimulationEngine;
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -25,12 +26,16 @@ public class GraphView {
     private List<Agent> agents = new ArrayList<>();
     private Node selectedNode;
     private SimulationEngine engine;
-    private int nodeCounter = 8;
+    private int nodeCounter;
 
-    public GraphView(Canvas canvas) {
+    public GraphView(Canvas canvas, Graph graph) {
         this.canvas = canvas;
         this.gc = canvas.getGraphicsContext2D();
-
+        this.graph = graph;
+        this.nodes = new ArrayList<>(graph.getNodes());
+        this.edges = new ArrayList<>(graph.getEdges());
+        this.nodeCounter = nodes.size();
+        
         canvas.setOnMouseClicked(event -> {
             double mouseX = event.getX();
             double mouseY = event.getY();
@@ -47,71 +52,12 @@ public class GraphView {
                 }
             }
         });
-        createSampleGraph();
+       
     }
 
     public void setEngine(SimulationEngine engine) {
         this.engine = engine;
-    }
-
-    private void createSampleGraph() {
-    	Node n1 = new Node("N1", "Room A", 50, 50, 10, NodeStatus.OPEN, NodeType.ROOM, 1.0f);
-    	Node n2 = new Node("N2", "Corridor 1", 250, 50, 10, NodeStatus.OPEN, NodeType.CORRIDOR, 1.0f);
-    	Node n3 = new Node("N3", "Room B", 450, 50, 10, NodeStatus.OPEN, NodeType.ROOM, 1.0f);
-    	Node n4 = new Node("N4", "Staircase", 450, 250, 10, NodeStatus.OPEN, NodeType.STAIRCASE, 1.0f);
-    	Node n5 = new Node("N5", "Corridor 2", 250, 250, 10, NodeStatus.OPEN, NodeType.CORRIDOR, 1.0f);
-    	Node n6 = new Node("N6", "Room C", 50, 250, 10, NodeStatus.OPEN, NodeType.ROOM, 1.0f);
-    	Node n7 = new Node("N7", "Exit", 250, 420, 10, NodeStatus.OPEN, NodeType.EXIT, 1.0f);
-
-        nodes.add(n1);
-        nodes.add(n2);
-        nodes.add(n3);
-        nodes.add(n4);
-        nodes.add(n5);
-        nodes.add(n6);
-        nodes.add(n7);
-
-        Edge e1 = new Edge("E1", n1, n2, 5, 1.0f, 1.0f, false);
-        Edge e2 = new Edge("E2", n2, n3, 5, 1.0f, 1.0f, false);
-        Edge e3 = new Edge("E3", n3, n4, 5, 1.0f, 1.0f, false);
-        Edge e4 = new Edge("E4", n4, n5, 5, 1.0f, 1.0f, false);
-        Edge e5 = new Edge("E5", n5, n6, 5, 1.0f, 1.0f, false);
-        Edge e6 = new Edge("E6", n5, n7, 1, 1.0f, 1.0f, false); // width=1 pour montrer la file d'attente
-        Edge e7 = new Edge("E7", n2, n5, 5, 1.0f, 1.0f, false);
-
-        edges.add(e1);
-        edges.add(e2);
-        edges.add(e3);
-        edges.add(e4);
-        edges.add(e5);
-        edges.add(e6);
-        edges.add(e7);
-
-        this.graph = new Graph();
-        graph.addNode(n1);
-        graph.addNode(n2);
-        graph.addNode(n3);
-        graph.addNode(n4);
-        graph.addNode(n5);
-        graph.addNode(n6);
-        graph.addNode(n7);
-        graph.addEdge(e1);
-        graph.addEdge(e2);
-        graph.addEdge(e3);
-        graph.addEdge(e4);
-        graph.addEdge(e5);
-        graph.addEdge(e6);
-        graph.addEdge(e7);
-
-        Agent agent1 = new Agent(n1, graph);
-        Agent agent2 = new Agent(n3, graph);
-        Agent agent3 = new Agent(n6, graph);
-        agents.add(agent1);
-        agents.add(agent2);
-        agents.add(agent3);
-
-        agent2.setState(AgentState.PANICKED);
-        agent3.setState(AgentState.INJURED);
+        this.agents = new ArrayList<>(engine.getAgents());
     }
 
     /** Spawns a new agent at the first available room node */
@@ -246,7 +192,10 @@ public class GraphView {
         }
 
         // Draw agents — offset circles so multiple agents are visible
-        for (Agent agent : agents) {
+        List<Agent> agentsToDraw =
+                (engine != null) ? engine.getAgents() : agents;
+
+        for (Agent agent : agentsToDraw) {
             Node node = agent.getCurrentNode();
             if (node != null) {
                 switch(agent.getState()) {
@@ -280,7 +229,11 @@ public class GraphView {
             gc.fillText("Agents: " + selectedNode.getOccupancy(), 620, 200);
         }
     }
-
+    
+    public void removeAgent(Agent agent) {
+        agents.remove(agent);
+    }
     public Graph getGraph() { return graph; }
     public List<Agent> getAgents() { return agents; }
+    
 }

@@ -1,9 +1,12 @@
-package exit.model;
+package model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import exit.model.enums.NodeType;
+import model.node.Node;
+import model.node.NodeType;
+import model.Edge;
+import model.agent.Agent;
 
 /**
  * Main structure of the building, contains all nodes and edges.
