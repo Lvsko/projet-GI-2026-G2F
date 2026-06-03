@@ -36,8 +36,13 @@ public class ResultView {
         evacuatedLabel.setLayoutY(120);
 
         Button retourButton = new Button("Retour");
-        retourButton.setLayoutX(50);
-        retourButton.setLayoutY(500);
+            retourButton.setLayoutX(50);
+            retourButton.setLayoutY(500);
+            retourButton.setOnAction(e -> {
+                stage.close();
+                Stage homeStage = new Stage();
+                new HomeView().start(homeStage);
+        });
 
         root.getChildren().addAll(
                 title,
