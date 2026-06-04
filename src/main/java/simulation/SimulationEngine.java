@@ -176,10 +176,11 @@ public class SimulationEngine {
         if (agent.getCurrentNode() != null) {
             agent.getCurrentNode().removeAgent(agent);
         }
-        agents.remove(agent);
-        tickCounters.remove(agent);
-        stuckCounters.remove(agent); // Clean up memory
-    }
+    agents.remove(agent);
+    tickCounters.remove(agent);
+    stuckCounters.remove(agent);
+    statistics.incrementEvacuated();
+}
 
     // Getters
     public Graph getGraph() { return graph; }
