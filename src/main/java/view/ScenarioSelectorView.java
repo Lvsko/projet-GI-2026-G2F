@@ -56,10 +56,10 @@ public class ScenarioSelectorView extends Application {
         );
         bestButton.setOnAction(e -> {
             stage.close();
-            Graph g = DemoScenario.createGraph();
             List<Agent> agents = DemoScenario.bestCase();
+            Graph g = DemoScenario.getLastGraph();
             Stage simStage = new Stage();
-            new MainView(g, agents).start(simStage);
+            new MainView(g, agents, "demo").start(simStage);
         });
 
         // Average Case
@@ -81,10 +81,10 @@ public class ScenarioSelectorView extends Application {
         );
         avgButton.setOnAction(e -> {
             stage.close();
-            Graph g = DemoScenario.createGraph();
             List<Agent> agents = DemoScenario.averageCase();
+            Graph g = DemoScenario.getLastGraph();
             Stage simStage = new Stage();
-            new MainView(g, agents).start(simStage);
+            new MainView(g, agents, "demo").start(simStage);
         });
 
         // Worst Case
@@ -106,19 +106,27 @@ public class ScenarioSelectorView extends Application {
         );
         worstButton.setOnAction(e -> {
             stage.close();
-            Graph g = DemoScenario.createGraph();
             List<Agent> agents = DemoScenario.worstCase();
+            Graph g = DemoScenario.getLastGraph();
             Stage simStage = new Stage();
-            new MainView(g, agents).start(simStage);
+            new MainView(g, agents, "demo").start(simStage);
         });
         HBox buttons = new HBox(20, bestButton, avgButton, worstButton);
         buttons.setAlignment(Pos.CENTER);
 
-        VBox root = new VBox(36, titleBox, buttons);
+        Button retourButton = new Button("← Retour");
+        retourButton.setStyle("-fx-background-color: transparent; -fx-text-fill: #bdbdbd; -fx-cursor: hand;");
+        retourButton.setOnAction(e -> {
+            stage.close();
+            Stage homeStage = new Stage();
+            new HomeView().start(homeStage);
+        });
+        
+        VBox root = new VBox(24, titleBox, buttons, retourButton);
         root.setAlignment(Pos.CENTER);
         root.setStyle("-fx-background-color: #424242;");
 
-        Scene scene = new Scene(root, 600, 300);
+        Scene scene = new Scene(root, 600, 340);
         stage.setTitle("EXIT — Démo");
         stage.setScene(scene);
         stage.show();
