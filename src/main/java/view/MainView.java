@@ -23,12 +23,20 @@ public class MainView extends Application {
     
     private Graph graph;
     private List<Agent> agents;
+    private String source;
 
     public MainView() {}
 
     public MainView(Graph graph, List<Agent> agents) {
         this.graph = graph;
         this.agents = agents;
+        this.source = "demo";
+    }
+
+    public MainView(Graph graph, List<Agent> agents, String source) {
+        this.graph = graph;
+        this.agents = agents;
+        this.source = source;
     }
     
     
@@ -56,6 +64,12 @@ public class MainView extends Application {
                     engine.step();
                     renderer.drawGraph();
                     lastTick = now;
+
+                    if (engine.getAgents().isEmpty()) {
+                        engine.pause();
+                        ResultView resultView = new ResultView();
+                        stage.setScene(resultView.createScene(stage, engine));
+                    }
                 }
             }
         };
@@ -97,9 +111,28 @@ public class MainView extends Application {
         Button configButton = new Button("Configure");
         configButton.setLayoutX(420);
         configButton.setLayoutY(10);
-        configButton.setOnAction(e -> new ConfigView(renderer.getGraph(), renderer).show());
+        configButton.setOnAction(e -> {
+            engine.pause();
+            Stage configStage = new Stage();
+            new ConfigView().start(configStage);
+        });
 
-        Pane root = new Pane(canvas, pauseButton, spawnButton, addNodeButton, removeNodeButton, configButton);
+        // Retour button
+        Button retourButton = new Button("← Retour");
+        retourButton.setLayoutX(530);
+        retourButton.setLayoutY(10);
+        retourButton.setOnAction(e -> {
+            engine.pause();
+            stage.close();
+            Stage prevStage = new Stage();
+            if ("demo".equals(source)) {
+                new ScenarioSelectorView().start(prevStage);
+            } else {
+                new HomeView().start(prevStage);
+            }
+        });
+
+        Pane root = new Pane(canvas, pauseButton, spawnButton, addNodeButton, removeNodeButton, configButton, retourButton);
         Scene scene = new Scene(root, 800, 610);
         stage.setTitle("EXIT Simulation");
         stage.setScene(scene);
