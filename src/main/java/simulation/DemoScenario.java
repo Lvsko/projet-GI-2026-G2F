@@ -42,11 +42,15 @@ public class DemoScenario {
         g.addEdge(new Edge("E7", n2, n5, 5, 1.0f, 1.0f, false));
         return g;
     }
+    private static Graph lastGraph;
+    public static Graph getLastGraph() { return lastGraph; }
+    
     /**
      * Best case : all agents are CALM, all exits open, nodes filled at 50%.
      */
     public static List<Agent> bestCase() {
         Graph g = createGraph();
+        lastGraph = g;
         return createAgents(g, 0.5f, AgentState.CALM, null, null);
     }
 
@@ -61,6 +65,7 @@ public class DemoScenario {
                 break;
             }
         }
+        lastGraph = g;
         return createAgents(g, 0.5f, null, null, null);  // null = alternates CALM/INJURED
     }
 
@@ -75,6 +80,7 @@ public class DemoScenario {
                 break;
             }
         }
+        lastGraph = g;
         return createAgents(g, 0.7f, AgentState.PANICKED, null, null);
     }
 
