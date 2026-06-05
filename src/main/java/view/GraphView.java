@@ -13,6 +13,7 @@ import model.node.NodeType;
 import simulation.SimulationEngine;
 import java.util.ArrayList;
 import java.util.List;
+
 /**
  * Handles the 2D rendering of the graph, agents and nodes.
  * @author Leonardo
@@ -24,9 +25,21 @@ public class GraphView {
     private List<Node> nodes = new ArrayList<>();
     private List<Edge> edges = new ArrayList<>();
     private List<Agent> agents = new ArrayList<>();
+
     private Node selectedNode;
+    private Edge selectedEdge;
+    private Agent selectedAgent;
+
     private SimulationEngine engine;
     private int nodeCounter;
+
+    // Position du dernier clic pour placer un nouveau nœud
+    private double lastClickX = 100;
+    private double lastClickY = 100;
+
+    // Mode connexion : on attend un deuxième clic pour créer une arête
+    private boolean connectMode = false;
+    private Node connectSource = null;
 
     public GraphView(Canvas canvas, Graph graph) {
         this.canvas = canvas;
@@ -35,24 +48,104 @@ public class GraphView {
         this.nodes = new ArrayList<>(graph.getNodes());
         this.edges = new ArrayList<>(graph.getEdges());
         this.nodeCounter = nodes.size();
-        
+
         canvas.setOnMouseClicked(event -> {
             double mouseX = event.getX();
             double mouseY = event.getY();
-            for (Node node : nodes) {
-                if (
-                    mouseX >= node.getX()
-                    && mouseX <= node.getX() + 120
-                    && mouseY >= node.getY()
-                    && mouseY <= node.getY() + 60
-                ) {
-                    selectedNode = node;
-                    drawGraph();
-                    System.out.println("Selected node: " + node.getName());
+            lastClickX = mouseX;
+            lastClickY = mouseY;
+
+            // Mode connexion — on cherche le nœud cible
+            if (connectMode) {
+                for (Node node : nodes) {
+                    if (hitNode(node, mouseX, mouseY) && !node.equals(connectSource)) {
+                        String edgeId = "E" + (edges.size() + 1);
+                        Edge newEdge = new Edge(edgeId, connectSource, node, 5, 1.0f, 1.0f, false);
+                        edges.add(newEdge);
+                        graph.addEdge(newEdge);
+                        connectMode = false;
+                        connectSource = null;
+                        drawGraph();
+                        return;
+                    }
+                }
+                // Clic dans le vide — annuler le mode connexion
+                connectMode = false;
+                connectSource = null;
+                drawGraph();
+                return;
+            }
+
+            // Priorité 1 : agents
+            List<Agent> agentsToDraw = (engine != null) ? engine.getAgents() : agents;
+            for (Agent agent : agentsToDraw) {
+                Node node = agent.getCurrentNode();
+                if (node != null) {
+                    List<Agent> nodeAgents = node.getAgents();
+                    int index = nodeAgents.indexOf(agent);
+                    double ax = node.getX() + 10 + (index % 5) * 22;
+                    double ay = node.getY() + 35;
+                    if (mouseX >= ax && mouseX <= ax + 15 && mouseY >= ay && mouseY <= ay + 15) {
+                        selectedAgent = agent;
+                        selectedNode = null;
+                        selectedEdge = null;
+                        drawGraph();
+                        return;
+                    }
                 }
             }
+
+            // Priorité 2 : nœuds
+            for (Node node : nodes) {
+                if (hitNode(node, mouseX, mouseY)) {
+                    selectedNode = node;
+                    selectedEdge = null;
+                    selectedAgent = null;
+                    drawGraph();
+                    System.out.println("Selected node: " + node.getName());
+                    return;
+                }
+            }
+
+            // Priorité 3 : arêtes
+            for (Edge edge : edges) {
+                if (hitEdge(edge, mouseX, mouseY)) {
+                    selectedEdge = edge;
+                    selectedNode = null;
+                    selectedAgent = null;
+                    drawGraph();
+                    System.out.println("Selected edge: " + edge.getId());
+                    return;
+                }
+            }
+
+            // Clic dans le vide — désélectionner tout
+            selectedNode = null;
+            selectedEdge = null;
+            selectedAgent = null;
+            drawGraph();
         });
-       
+    }
+
+    /** Vérifie si un clic touche un nœud */
+    private boolean hitNode(Node node, double x, double y) {
+        return x >= node.getX() && x <= node.getX() + 120
+            && y >= node.getY() && y <= node.getY() + 60;
+    }
+
+    /** Vérifie si un clic est proche d'une arête (distance < 8px) */
+    private boolean hitEdge(Edge edge, double mx, double my) {
+        double x1 = edge.getSource().getX() + 60;
+        double y1 = edge.getSource().getY() + 30;
+        double x2 = edge.getTarget().getX() + 60;
+        double y2 = edge.getTarget().getY() + 30;
+        double len2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+        if (len2 == 0) return false;
+        double t = Math.max(0, Math.min(1, ((mx - x1) * (x2 - x1) + (my - y1) * (y2 - y1)) / len2));
+        double px = x1 + t * (x2 - x1);
+        double py = y1 + t * (y2 - y1);
+        double dist = Math.sqrt((mx - px) * (mx - px) + (my - py) * (my - py));
+        return dist < 8;
     }
 
     public void setEngine(SimulationEngine engine) {
@@ -62,48 +155,56 @@ public class GraphView {
 
     /** Spawns a new agent at the first available room node */
     public void spawnAgentAtRoom() {
-        for (Node node : nodes) {
-            if (node.getType() == NodeType.ROOM) {
-                Agent agent = new Agent(node, graph);
-                agents.add(agent);
-                if (engine != null) engine.addAgent(agent);
-                drawGraph();
-                return;
+        // Si un nœud est sélectionné, spawner dessus
+        Node target = selectedNode;
+        if (target == null) {
+            for (Node node : nodes) {
+                if (node.getType() == NodeType.ROOM) { target = node; break; }
             }
         }
+        if (target == null) return;
+        Agent agent = new Agent(target, graph);
+        agents.add(agent);
+        if (engine != null) engine.addAgent(agent);
+        drawGraph();
     }
 
-    /** Adds a new room node connected to the first corridor found */
+    /** Adds a new room node at the last clicked position */
     public void addRoomNode() {
-        Node connectTo = null;
-        for (Node n : nodes) {
-            if (n.getType() == NodeType.CORRIDOR) {
-                connectTo = n;
-                break;
-            }
-        }
-        if (connectTo == null && !nodes.isEmpty()) {
-            connectTo = nodes.get(0);
-        }
-        if (connectTo == null) return;
-
-        String id = "N" + nodeCounter;
-        double x = 50 + ((nodeCounter - 8) % 3) * 200;
-        double y = 420;
-        Node newNode = new Node(id, "Room " + nodeCounter, x, y, 10, NodeStatus.OPEN, NodeType.ROOM, 1.0f);
-        Edge newEdge = new Edge("E" + (edges.size() + 1), newNode, connectTo, 5, 1.0f, 1.0f, false);
+        String id = "N" + (nodeCounter + 1);
+        Node newNode = new Node(id, "Room " + (nodeCounter + 1), lastClickX - 60, lastClickY - 30,
+                10, NodeStatus.OPEN, NodeType.ROOM, 1.0f);
         nodes.add(newNode);
-        edges.add(newEdge);
         graph.addNode(newNode);
-        graph.addEdge(newEdge);
         nodeCounter++;
         drawGraph();
     }
 
-    /** Removes the currently selected node */
-    public void removeSelectedNode() {
+    /** Active le mode connexion pour ajouter une arête depuis le nœud sélectionné */
+    public void startAddEdge() {
         if (selectedNode == null) return;
-        // Remove agents on this node from simulation
+        connectMode = true;
+        connectSource = selectedNode;
+        drawGraph();
+    }
+
+    /** Removes the currently selected element (node, edge or agent) */
+    public void removeSelectedNode() {
+        if (selectedAgent != null) {
+            agents.remove(selectedAgent);
+            if (engine != null) engine.removeAgent(selectedAgent);
+            selectedAgent = null;
+            drawGraph();
+            return;
+        }
+        if (selectedEdge != null) {
+            edges.remove(selectedEdge);
+            graph.removeEdge(selectedEdge.getId());
+            selectedEdge = null;
+            drawGraph();
+            return;
+        }
+        if (selectedNode == null) return;
         List<Agent> toRemove = new ArrayList<>();
         for (Agent a : agents) {
             if (selectedNode.equals(a.getCurrentNode())) {
@@ -112,9 +213,7 @@ public class GraphView {
             }
         }
         agents.removeAll(toRemove);
-        // Remove connected edges
         edges.removeIf(e -> e.getSource().equals(selectedNode) || e.getTarget().equals(selectedNode));
-        // Remove from graph and nodes list
         graph.removeNode(selectedNode.getId());
         nodes.remove(selectedNode);
         selectedNode = null;
@@ -124,116 +223,185 @@ public class GraphView {
     public void drawGraph() {
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
-        // Draw edges — color based on capacity
+        // Mode connexion — afficher un message
+        if (connectMode) {
+            gc.setFill(Color.DARKBLUE);
+            gc.fillText("Mode connexion : cliquez sur le nœud cible (clic dans le vide pour annuler)", 10, 15);
+        }
+
+        // Draw edges
         for (Edge edge : edges) {
-            if (edge.getOccupancy() >= edge.getWidth()) {
-                gc.setStroke(Color.RED); // full
+            if (edge == selectedEdge) {
+                gc.setStroke(Color.BLUE);
+                gc.setLineWidth(3);
+            } else if (edge.getOccupancy() >= edge.getWidth()) {
+                gc.setStroke(Color.RED);
+                gc.setLineWidth(2);
             } else if (edge.getOccupancy() > 0) {
-                gc.setStroke(Color.ORANGE); // partially full
+                gc.setStroke(Color.ORANGE);
+                gc.setLineWidth(2);
             } else {
-                gc.setStroke(Color.BLACK); // empty
+                gc.setStroke(Color.BLACK);
+                gc.setLineWidth(2);
             }
-            gc.setLineWidth(2);
             double x1 = edge.getSource().getX() + 60;
             double y1 = edge.getSource().getY() + 30;
             double x2 = edge.getTarget().getX() + 60;
             double y2 = edge.getTarget().getY() + 30;
             gc.strokeLine(x1, y1, x2, y2);
-            if(edge.isDirected()) {
+
+            // Afficher la largeur de l'arête
+            double mx = (x1 + x2) / 2;
+            double my = (y1 + y2) / 2;
+            gc.setFill(Color.DARKGRAY);
+            gc.fillText("w=" + edge.getWidth(), mx + 4, my - 4);
+
+            if (edge.isDirected()) {
                 double angle = Math.atan2(y2 - y1, x2 - x1);
                 double arrowLength = 15;
                 double arrowX = x2 - 30 * Math.cos(angle);
                 double arrowY = y2 - 30 * Math.sin(angle);
-                double xArrow1 = arrowX - arrowLength * Math.cos(angle - Math.PI / 6);
-                double yArrow1 = arrowY - arrowLength * Math.sin(angle - Math.PI / 6);
-                double xArrow2 = arrowX - arrowLength * Math.cos(angle + Math.PI / 6);
-                double yArrow2 = arrowY - arrowLength * Math.sin(angle + Math.PI / 6);
-                gc.strokeLine(arrowX, arrowY, xArrow1, yArrow1);
-                gc.strokeLine(arrowX, arrowY, xArrow2, yArrow2);
+                gc.setStroke(edge == selectedEdge ? Color.BLUE : Color.BLACK);
+                gc.strokeLine(arrowX, arrowY, arrowX - arrowLength * Math.cos(angle - Math.PI / 6), arrowY - arrowLength * Math.sin(angle - Math.PI / 6));
+                gc.strokeLine(arrowX, arrowY, arrowX - arrowLength * Math.cos(angle + Math.PI / 6), arrowY - arrowLength * Math.sin(angle + Math.PI / 6));
             }
         }
 
         // Draw nodes
         for (Node node : nodes) {
-            switch(node.getType()) {
-                case ROOM:
-                    gc.setFill(Color.LIGHTBLUE);
-                    break;
-                case CORRIDOR:
-                    gc.setFill(Color.LIGHTGRAY);
-                    break;
-                case EXIT:
-                    gc.setFill(Color.LIGHTGREEN);
-                    break;
-                case STAIRCASE:
-                    gc.setFill(Color.ORANGE);
-                    break;
-                default:
-                    gc.setFill(Color.BLACK);
+            switch (node.getType()) {
+                case ROOM:      gc.setFill(Color.LIGHTBLUE);  break;
+                case CORRIDOR:  gc.setFill(Color.LIGHTGRAY);  break;
+                case EXIT:      gc.setFill(Color.LIGHTGREEN); break;
+                case STAIRCASE: gc.setFill(Color.ORANGE);     break;
+                default:        gc.setFill(Color.BLACK);
             }
             gc.fillRect(node.getX(), node.getY(), 120, 60);
-            if (node == selectedNode) {
-                gc.setStroke(Color.RED);
+
+            if (node == selectedNode || node == connectSource) {
+                gc.setStroke(node == connectSource ? Color.DARKBLUE : Color.RED);
                 gc.setLineWidth(3);
             } else {
                 gc.setStroke(Color.BLACK);
                 gc.setLineWidth(1);
             }
             gc.strokeRect(node.getX(), node.getY(), 120, 60);
-            // Node label
             gc.setFill(Color.BLACK);
             gc.fillText(node.getName(), node.getX() + 5, node.getY() + 20);
-            // Agent queue count
             int occupancy = node.getOccupancy();
             if (occupancy > 0) {
-                gc.setFill(occupancy > 1 ? Color.RED : Color.DARKGREEN);
+                gc.setFill(occupancy > 3 ? Color.RED : Color.DARKGREEN);
                 gc.fillText("agents: " + occupancy, node.getX() + 5, node.getY() + 50);
             }
         }
 
-        // Draw agents — offset circles so multiple agents are visible
-        List<Agent> agentsToDraw =
-                (engine != null) ? engine.getAgents() : agents;
-
+        // Draw agents
+        List<Agent> agentsToDraw = (engine != null) ? engine.getAgents() : agents;
+        java.util.Map<Node, List<Agent>> agentsByNode = new java.util.HashMap<>();
         for (Agent agent : agentsToDraw) {
             Node node = agent.getCurrentNode();
-            if (node != null) {
-                switch(agent.getState()) {
-                    case CALM:
-                        gc.setFill(Color.GREEN);
-                        break;
-                    case PANICKED:
-                        gc.setFill(Color.RED);
-                        break;
-                    case INJURED:
-                        gc.setFill(Color.YELLOW);
-                        break;
-                    default:
-                        gc.setFill(Color.BLACK);
+            if (node != null) agentsByNode.computeIfAbsent(node, k -> new ArrayList<>()).add(agent);
+        }
+
+        for (java.util.Map.Entry<Node, List<Agent>> entry : agentsByNode.entrySet()) {
+            Node node = entry.getKey();
+            List<Agent> nodeAgents = entry.getValue();
+            int count = nodeAgents.size();
+
+            if (count <= 4) {
+                for (int i = 0; i < count; i++) {
+                    Agent agent = nodeAgents.get(i);
+                    Color fill = agentColor(agent);
+                    gc.setFill(fill);
+                    double ax = node.getX() + 10 + i * 22;
+                    double ay = node.getY() + 35;
+                    gc.fillOval(ax, ay, 15, 15);
+                    if (agent == selectedAgent) {
+                        gc.setStroke(Color.BLUE);
+                        gc.setLineWidth(2);
+                        gc.strokeOval(ax, ay, 15, 15);
+                    }
                 }
-                List<Agent> nodeAgents = node.getAgents();
-                int index = nodeAgents.indexOf(agent);
-                double agentX = node.getX() + 10 + index * 20;
-                double agentY = node.getY() + 30;
-                gc.fillOval(agentX, agentY, 15, 15);
+            } else {
+                long panicked = nodeAgents.stream().filter(a -> a.getState() == AgentState.PANICKED).count();
+                long injured  = nodeAgents.stream().filter(a -> a.getState() == AgentState.INJURED).count();
+                if (panicked > count / 2) gc.setFill(Color.RED);
+                else if (injured > count / 2) gc.setFill(Color.YELLOW);
+                else gc.setFill(Color.GREEN);
+                double cx = node.getX() + 60;
+                double cy = node.getY() + 42;
+                gc.fillOval(cx - 18, cy - 18, 36, 36);
+                gc.setFill(Color.BLACK);
+                gc.fillText("x" + count, cx - 8, cy + 5);
             }
         }
 
-        // Draw selected node info panel
-        if (selectedNode != null) {
+        // Draw exiting agents (visible 1 tick at EXIT)
+        if (engine != null) {
+            for (Agent agent : engine.getExitingAgents()) {
+                Node node = agent.getCurrentNode();
+                if (node != null) {
+                    gc.setFill(Color.WHITE);
+                    gc.setStroke(Color.DARKGREEN);
+                    gc.setLineWidth(1.5);
+                    int index = node.getAgents().size();
+                    double ax = node.getX() + 10 + (index % 5) * 22;
+                    double ay = node.getY() + 35 + (index / 5) * 20;
+                    gc.fillOval(ax, ay, 15, 15);
+                    gc.strokeOval(ax, ay, 15, 15);
+                }
+            }
+        }
+
+        // Compteur évacués
+        if (engine != null) {
+            int evacuated = engine.getStatistics().getEvacuatedCount();
+            gc.setFill(Color.DARKGREEN);
+            gc.fillRect(620, 15, 160, 25);
+            gc.setFill(Color.WHITE);
+            gc.fillText("Évacués : " + evacuated, 630, 32);
+        }
+
+        // Panneau info selon sélection
+        double px = 620;
+        double py = 55;
+        if (selectedAgent != null) {
             gc.setFill(Color.BLACK);
-            gc.fillText("Selected Node", 620, 80);
-            gc.fillText("ID: " + selectedNode.getId(), 620, 110);
-            gc.fillText("Type: " + selectedNode.getType(), 620, 140);
-            gc.fillText("Capacity: " + selectedNode.getMaxCapacity(), 620, 170);
-            gc.fillText("Agents: " + selectedNode.getOccupancy(), 620, 200);
+            gc.fillText("— Agent sélectionné —", px, py);
+            gc.fillText("ID : " + selectedAgent.getId(), px, py + 20);
+            gc.fillText("État : " + selectedAgent.getState(), px, py + 40);
+            gc.fillText("Type : " + selectedAgent.getType(), px, py + 60);
+            gc.fillText("Nœud : " + (selectedAgent.getCurrentNode() != null ? selectedAgent.getCurrentNode().getName() : "transit"), px, py + 80);
+        } else if (selectedEdge != null) {
+            gc.setFill(Color.BLACK);
+            gc.fillText("— Arête sélectionnée —", px, py);
+            gc.fillText("ID : " + selectedEdge.getId(), px, py + 20);
+            gc.fillText("Source : " + selectedEdge.getSource().getName(), px, py + 40);
+            gc.fillText("Cible : " + selectedEdge.getTarget().getName(), px, py + 60);
+            gc.fillText("Largeur : " + selectedEdge.getWidth(), px, py + 80);
+            gc.fillText("Occupancy : " + selectedEdge.getOccupancy(), px, py + 100);
+        } else if (selectedNode != null) {
+            gc.setFill(Color.BLACK);
+            gc.fillText("— Nœud sélectionné —", px, py);
+            gc.fillText("ID : " + selectedNode.getId(), px, py + 20);
+            gc.fillText("Type : " + selectedNode.getType(), px, py + 40);
+            gc.fillText("Capacité : " + selectedNode.getMaxCapacity(), px, py + 60);
+            gc.fillText("Agents : " + selectedNode.getOccupancy(), px, py + 80);
+            gc.fillText("(Cliquez 'Add Edge'", px, py + 100);
+            gc.fillText(" pour connecter)", px, py + 115);
         }
     }
-    
-    public void removeAgent(Agent agent) {
-        agents.remove(agent);
+
+    private Color agentColor(Agent agent) {
+        switch (agent.getState()) {
+            case CALM:     return Color.GREEN;
+            case PANICKED: return Color.RED;
+            case INJURED:  return Color.YELLOW;
+            default:       return Color.BLACK;
+        }
     }
+
+    public void removeAgent(Agent agent) { agents.remove(agent); }
     public Graph getGraph() { return graph; }
     public List<Agent> getAgents() { return agents; }
-    
 }
