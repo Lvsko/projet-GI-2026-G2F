@@ -95,31 +95,27 @@ public class MainView extends Application {
         spawnButton.setLayoutY(10);
         spawnButton.setOnAction(e -> renderer.spawnAgentAtRoom());
 
-        // Add room node
-        Button addNodeButton = new Button("Add Room");
+        // Add room node at last clicked position
+        Button addNodeButton = new Button("Add Node ici");
         addNodeButton.setLayoutX(210);
         addNodeButton.setLayoutY(10);
         addNodeButton.setOnAction(e -> renderer.addRoomNode());
 
-        // Remove selected node
-        Button removeNodeButton = new Button("Remove Selected");
-        removeNodeButton.setLayoutX(300);
+        // Add edge between selected node and next clicked node
+        Button addEdgeButton = new Button("Add Edge");
+        addEdgeButton.setLayoutX(310);
+        addEdgeButton.setLayoutY(10);
+        addEdgeButton.setOnAction(e -> renderer.startAddEdge());
+
+        // Remove selected element (node, edge or agent)
+        Button removeNodeButton = new Button("Supprimer");
+        removeNodeButton.setLayoutX(390);
         removeNodeButton.setLayoutY(10);
         removeNodeButton.setOnAction(e -> renderer.removeSelectedNode());
 
-        //Button Configuration
-        Button configButton = new Button("Configure");
-        configButton.setLayoutX(420);
-        configButton.setLayoutY(10);
-        configButton.setOnAction(e -> {
-            engine.pause();
-            Stage configStage = new Stage();
-            new ConfigView().start(configStage);
-        });
-
         // Retour button
         Button retourButton = new Button("← Retour");
-        retourButton.setLayoutX(530);
+        retourButton.setLayoutX(490);
         retourButton.setLayoutY(10);
         retourButton.setOnAction(e -> {
             engine.pause();
@@ -132,7 +128,7 @@ public class MainView extends Application {
             }
         });
 
-        Pane root = new Pane(canvas, pauseButton, spawnButton, addNodeButton, removeNodeButton, configButton, retourButton);
+        Pane root = new Pane(canvas, pauseButton, spawnButton, addNodeButton, addEdgeButton, removeNodeButton, retourButton);
         Scene scene = new Scene(root, 800, 610);
         stage.setTitle("EXIT Simulation");
         stage.setScene(scene);
