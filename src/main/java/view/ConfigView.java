@@ -9,6 +9,7 @@ import model.node.NodeType;
 import simulation.SimulationState;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -25,6 +26,8 @@ import java.util.ArrayList;
 public class ConfigView {
 
     private Graph graph;
+    private GraphView preview;
+    private Canvas previewCanvas;
 
     public ConfigView() {
         this.graph = new Graph();
@@ -33,15 +36,16 @@ public class ConfigView {
     public void start(Stage stage) {
         stage.setTitle("Configure Graph");
 
-        VBox root = new VBox(15);
-        root.setPadding(new Insets(15));
+        // --- FORMULAIRE (gauche) ---
+        VBox form = new VBox(15);
+        form.setPadding(new Insets(15));
+        form.setPrefWidth(420);
 
-        // --- ADD NODE SECTION ---
+        // ADD NODE
         Label nodeTitle = new Label("Add Node");
         nodeTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
         GridPane nodeGrid = new GridPane();
-        nodeGrid.setHgap(10);
-        nodeGrid.setVgap(8);
+        nodeGrid.setHgap(10); nodeGrid.setVgap(8);
         TextField nodeId = new TextField(); nodeId.setPromptText("ID (e.g. N1)");
         TextField nodeName = new TextField(); nodeName.setPromptText("Name (e.g. Room A)");
         TextField nodeCapacity = new TextField(); nodeCapacity.setPromptText("Capacity (e.g. 10)");
@@ -71,17 +75,17 @@ public class ConfigView {
                 graph.addNode(new Node(id, name, x, y, capacity, NodeStatus.OPEN, type, 1.0f));
                 nodeStatus.setText("Node '" + name + "' added.");
                 nodeId.clear(); nodeName.clear(); nodeCapacity.clear(); nodeX.clear(); nodeY.clear();
+                refreshPreview();
             } catch (NumberFormatException ex) {
                 nodeStatus.setText("Error: capacity, X and Y must be numbers.");
             }
         });
 
-        // --- ADD EDGE SECTION ---
+        // ADD EDGE
         Label edgeTitle = new Label("Add Edge");
         edgeTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
         GridPane edgeGrid = new GridPane();
-        edgeGrid.setHgap(10);
-        edgeGrid.setVgap(8);
+        edgeGrid.setHgap(10); edgeGrid.setVgap(8);
         TextField edgeId = new TextField(); edgeId.setPromptText("ID (e.g. E1)");
         TextField edgeSource = new TextField(); edgeSource.setPromptText("Source node ID");
         TextField edgeTarget = new TextField(); edgeTarget.setPromptText("Target node ID");
@@ -110,12 +114,13 @@ public class ConfigView {
                 graph.addEdge(new Edge(id, source, target, width, distance, 1.0f, directed));
                 edgeStatus.setText("Edge '" + id + "' added.");
                 edgeId.clear(); edgeSource.clear(); edgeTarget.clear(); edgeWidth.clear(); edgeDistance.clear();
+                refreshPreview();
             } catch (NumberFormatException ex) {
                 edgeStatus.setText("Error: width and distance must be numbers.");
             }
         });
 
-        // --- SAVE / LOAD SECTION ---
+        // SAVE / LOAD
         Label saveLoadTitle = new Label("Save / Load Plan");
         saveLoadTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
         Label saveLoadStatus = new Label();
@@ -145,6 +150,7 @@ public class ConfigView {
                     SimulationState state = SimulationState.load(file.getAbsolutePath());
                     graph = state.getGraph();
                     saveLoadStatus.setText("Plan loaded.");
+                    refreshPreview();
                 } catch (Exception ex) {
                     saveLoadStatus.setText("Error loading: " + ex.getMessage());
                 }
@@ -152,7 +158,7 @@ public class ConfigView {
         });
         HBox saveLoadButtons = new HBox(10, saveBtn, loadBtn);
 
-        // --- LAUNCH BUTTON ---
+        // LAUNCH
         Button launchBtn = new Button("Launch Simulation");
         launchBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;");
         launchBtn.setOnAction(e -> {
@@ -161,7 +167,7 @@ public class ConfigView {
             new MainView(graph, new ArrayList<Agent>(), "config").start(simStage);
         });
 
-        // --- RETOUR BUTTON ---
+        // RETOUR
         Button retourBtn = new Button("← Retour");
         retourBtn.setOnAction(e -> {
             stage.close();
@@ -169,19 +175,41 @@ public class ConfigView {
             new HomeView().start(homeStage);
         });
 
-        root.getChildren().addAll(
-                nodeTitle, nodeGrid, addNodeBtn, nodeStatus,
-                new Separator(),
-                edgeTitle, edgeGrid, addEdgeBtn, edgeStatus,
-                new Separator(),
-                saveLoadTitle, saveLoadButtons, saveLoadStatus,
-                new Separator(),
-                launchBtn, retourBtn
+        form.getChildren().addAll(
+            nodeTitle, nodeGrid, addNodeBtn, nodeStatus,
+            new Separator(),
+            edgeTitle, edgeGrid, addEdgeBtn, edgeStatus,
+            new Separator(),
+            saveLoadTitle, saveLoadButtons, saveLoadStatus,
+            new Separator(),
+            launchBtn, retourBtn
         );
 
-        Scene scene = new Scene(new ScrollPane(root), 420, 700);
+        // --- PREVIEW (droite) ---
+        previewCanvas = new Canvas(600, 500);
+        preview = new GraphView(previewCanvas, graph);
+
+        VBox previewBox = new VBox(8);
+        previewBox.setPadding(new Insets(15));
+        Label previewTitle = new Label("Aperçu du graphe");
+        previewTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
+        previewBox.getChildren().addAll(previewTitle, previewCanvas);
+
+        // Layout principal : formulaire à gauche, aperçu à droite
+        HBox mainLayout = new HBox(10, new ScrollPane(form), previewBox);
+
+        Scene scene = new Scene(mainLayout, 1060, 720);
         stage.setScene(scene);
         stage.show();
+
+        // Dessiner le graphe initial (vide)
+        preview.drawGraph();
+    }
+
+    /** Recrée le GraphView avec le graphe courant et redessine */
+    private void refreshPreview() {
+        preview = new GraphView(previewCanvas, graph);
+        preview.drawGraph();
     }
 
     public Graph getGraph() { return graph; }
