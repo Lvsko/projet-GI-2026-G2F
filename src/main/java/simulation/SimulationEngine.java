@@ -34,6 +34,9 @@ public class SimulationEngine {
     // Pathfinder instance needed for recalculation
     private Pathfinder pathfinder;
 
+    // Agents waiting 1 tick at EXIT before being removed (visual effect)
+    private List<Agent> exitingAgents;
+
     public SimulationEngine(Graph graph) {
         this.graph = graph;
         this.agents = new ArrayList<>();
@@ -42,7 +45,8 @@ public class SimulationEngine {
         this.currentTick = 0;
         this.tickCounters = new HashMap<>();
         this.stuckCounters = new HashMap<>();
-        this.pathfinder = new Pathfinder(); // Initialize pathfinder
+        this.pathfinder = new Pathfinder();
+        this.exitingAgents = new ArrayList<>();
     }
 
     /** Starts the simulation */
@@ -62,20 +66,30 @@ public class SimulationEngine {
 
     /** Advances the simulation by one tick */
     public void step() {
-        if (!running) return; // Added safety check
+        if (!running) return;
         currentTick++;
 
-        List<Agent> evacuatedAgents = new ArrayList<>();
+        // Remove agents that waited 1 tick at EXIT
+        for (Agent agent : exitingAgents) {
+            if (agent.getCurrentNode() != null) {
+                agent.getCurrentNode().removeAgent(agent);
+            }
+            agents.remove(agent);
+            tickCounters.remove(agent);
+            stuckCounters.remove(agent);
+            statistics.incrementEvacuated();
+        }
+        exitingAgents.clear();
 
-        for (Agent agent : agents) {
+        List<Agent> evacuatedAgents = new ArrayList<>();
+        for (Agent agent : new ArrayList<>(agents)) {
             if (moveAgent(agent)) {
                 evacuatedAgents.add(agent);
             }
         }
 
-        for (Agent agent : evacuatedAgents) {
-            removeAgent(agent);
-        }
+        // Move evacuated agents to exitingAgents (visible 1 tick at EXIT)
+        exitingAgents.addAll(evacuatedAgents);
 
         statistics.update(currentTick, (ArrayList<Agent>) agents);
     }
@@ -117,30 +131,35 @@ public class SimulationEngine {
                 Edge edge = findEdge(agent.getCurrentNode(), nextNode);
 
                 if (edge != null) {
-                    // KAN-36 LOGIC INTEGRATION: Check if edge is available before moving
                     if (edge.isAvailable() && agent.moveToEdge(edge)) {
-                        // Success: Remove the node from path and reset stuck counter
                         agent.getCurrentPath().remove(0);
                         stuckCounters.put(agent, 0);
+                        // Exit immédiat si la destination est EXIT
+                        Node destination;
+                        if (edge.getSource().equals(agent.getPreviousNode())) {
+                            destination = edge.getTarget();
+                        } else {
+                            destination = edge.getSource();
+                        }
+                        if (destination.getType() == model.node.NodeType.EXIT) {
+                            agent.arriveAt(destination);
+                            destination.removeAgent(agent);
+                            return true;
+                        }
                     } else {
-                        // KAN-36: Edge is blocked/full! Increment stuck counter
+                        // Edge plein — incrémenter le compteur de blocage
                         int stuckTicks = stuckCounters.getOrDefault(agent, 0) + 1;
                         stuckCounters.put(agent, stuckTicks);
-
-                        // If stuck for 2 ticks, trigger dynamic recalculation
-                        if (stuckTicks >= 2) {
+                        // Recalculer le chemin après 3 ticks bloqué
+                        if (stuckTicks >= 3) {
                             List<Node> newPath = pathfinder.dijkstraTime(
                                     agent.getCurrentNode(),
                                     agent.getDestinationNode(),
                                     graph
                             );
-
-                            // Remove current node from the new path to avoid staying in place
                             if (newPath != null && !newPath.isEmpty()) {
                                 newPath.remove(0);
                             }
-
-                            // Update agent's path and reset counter
                             agent.setCurrentPath(newPath);
                             stuckCounters.put(agent, 0);
                         }
@@ -176,15 +195,16 @@ public class SimulationEngine {
         if (agent.getCurrentNode() != null) {
             agent.getCurrentNode().removeAgent(agent);
         }
-    agents.remove(agent);
-    tickCounters.remove(agent);
-    stuckCounters.remove(agent);
-    statistics.incrementEvacuated();
-}
+        agents.remove(agent);
+        exitingAgents.remove(agent);
+        tickCounters.remove(agent);
+        stuckCounters.remove(agent);
+    }
 
     // Getters
     public Graph getGraph() { return graph; }
     public List<Agent> getAgents() { return agents; }
+    public List<Agent> getExitingAgents() { return exitingAgents; }
     public Statistics getStatistics() { return statistics; }
     public boolean isRunning() { return running; }
     public int getCurrentTick() { return currentTick; }
