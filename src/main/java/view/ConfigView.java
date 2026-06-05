@@ -37,13 +37,21 @@ public class ConfigView {
         stage.setTitle("Configure Graph");
 
         // --- FORMULAIRE (gauche) ---
+        String labelStyle = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial;";
+        String titleStyle = "-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 14;";
+        String fieldStyle = "-fx-background-color: #303030; -fx-text-fill: #e0e0e0; -fx-border-color: #616161; -fx-border-radius: 4;";
+        String btnPrimary = "-fx-background-color: #2E7D32; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 6 14 6 14;";
+        String btnSecondary = "-fx-background-color: #424242; -fx-text-fill: #e0e0e0; -fx-background-radius: 6; -fx-cursor: hand; -fx-border-color: #616161; -fx-border-radius: 6; -fx-padding: 6 14 6 14;";
+        String btnDanger = "-fx-background-color: #7B1F1F; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 6 14 6 14;";
+
         VBox form = new VBox(15);
         form.setPadding(new Insets(15));
         form.setPrefWidth(420);
+        form.setStyle("-fx-background-color: #424242;");
 
         // ADD NODE
         Label nodeTitle = new Label("Add Node");
-        nodeTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
+        nodeTitle.setStyle(titleStyle);
         GridPane nodeGrid = new GridPane();
         nodeGrid.setHgap(10); nodeGrid.setVgap(8);
         TextField nodeId = new TextField(); nodeId.setPromptText("ID (e.g. N1)");
@@ -54,14 +62,24 @@ public class ConfigView {
         ComboBox<NodeType> nodeType = new ComboBox<>();
         nodeType.getItems().addAll(NodeType.values());
         nodeType.setValue(NodeType.ROOM);
-        nodeGrid.add(new Label("ID:"), 0, 0);       nodeGrid.add(nodeId, 1, 0);
-        nodeGrid.add(new Label("Name:"), 0, 1);     nodeGrid.add(nodeName, 1, 1);
-        nodeGrid.add(new Label("Type:"), 0, 2);     nodeGrid.add(nodeType, 1, 2);
-        nodeGrid.add(new Label("Capacity:"), 0, 3); nodeGrid.add(nodeCapacity, 1, 3);
-        nodeGrid.add(new Label("X:"), 0, 4);        nodeGrid.add(nodeX, 1, 4);
-        nodeGrid.add(new Label("Y:"), 0, 5);        nodeGrid.add(nodeY, 1, 5);
-        Label nodeStatus = new Label();
-        Button addNodeBtn = new Button("Add Node");
+        nodeId.setStyle(fieldStyle); nodeName.setStyle(fieldStyle);
+        nodeCapacity.setStyle(fieldStyle); nodeX.setStyle(fieldStyle); nodeY.setStyle(fieldStyle);
+        nodeType.setStyle(fieldStyle);
+
+        Label lId1 = new Label("ID:"); lId1.setStyle(labelStyle);
+        Label lName = new Label("Name:"); lName.setStyle(labelStyle);
+        Label lType = new Label("Type:"); lType.setStyle(labelStyle);
+        Label lCap = new Label("Capacity:"); lCap.setStyle(labelStyle);
+        Label lX = new Label("X:"); lX.setStyle(labelStyle);
+        Label lY = new Label("Y:"); lY.setStyle(labelStyle);
+        nodeGrid.add(lId1, 0, 0); nodeGrid.add(nodeId, 1, 0);
+        nodeGrid.add(lName, 0, 1); nodeGrid.add(nodeName, 1, 1);
+        nodeGrid.add(lType, 0, 2); nodeGrid.add(nodeType, 1, 2);
+        nodeGrid.add(lCap, 0, 3);  nodeGrid.add(nodeCapacity, 1, 3);
+        nodeGrid.add(lX, 0, 4);    nodeGrid.add(nodeX, 1, 4);
+        nodeGrid.add(lY, 0, 5);    nodeGrid.add(nodeY, 1, 5);
+        Label nodeStatus = new Label(); nodeStatus.setStyle(labelStyle);
+        Button addNodeBtn = new Button("Add Node"); addNodeBtn.setStyle(btnPrimary);
         addNodeBtn.setOnAction(e -> {
             try {
                 String id = nodeId.getText().trim();
@@ -83,7 +101,7 @@ public class ConfigView {
 
         // ADD EDGE
         Label edgeTitle = new Label("Add Edge");
-        edgeTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
+        edgeTitle.setStyle(titleStyle);
         GridPane edgeGrid = new GridPane();
         edgeGrid.setHgap(10); edgeGrid.setVgap(8);
         TextField edgeId = new TextField(); edgeId.setPromptText("ID (e.g. E1)");
@@ -92,14 +110,23 @@ public class ConfigView {
         TextField edgeWidth = new TextField(); edgeWidth.setPromptText("Width (e.g. 5)");
         TextField edgeDistance = new TextField(); edgeDistance.setPromptText("Distance (e.g. 1.0)");
         CheckBox edgeDirected = new CheckBox("Directed");
-        edgeGrid.add(new Label("ID:"), 0, 0);       edgeGrid.add(edgeId, 1, 0);
-        edgeGrid.add(new Label("Source:"), 0, 1);   edgeGrid.add(edgeSource, 1, 1);
-        edgeGrid.add(new Label("Target:"), 0, 2);   edgeGrid.add(edgeTarget, 1, 2);
-        edgeGrid.add(new Label("Width:"), 0, 3);    edgeGrid.add(edgeWidth, 1, 3);
-        edgeGrid.add(new Label("Distance:"), 0, 4); edgeGrid.add(edgeDistance, 1, 4);
+        edgeId.setStyle(fieldStyle); edgeSource.setStyle(fieldStyle); edgeTarget.setStyle(fieldStyle);
+        edgeWidth.setStyle(fieldStyle); edgeDistance.setStyle(fieldStyle);
+        edgeDirected.setStyle(labelStyle);
+
+        Label lId2 = new Label("ID:"); lId2.setStyle(labelStyle);
+        Label lSrc = new Label("Source:"); lSrc.setStyle(labelStyle);
+        Label lTgt = new Label("Target:"); lTgt.setStyle(labelStyle);
+        Label lW = new Label("Width:"); lW.setStyle(labelStyle);
+        Label lDist = new Label("Distance:"); lDist.setStyle(labelStyle);
+        edgeGrid.add(lId2, 0, 0); edgeGrid.add(edgeId, 1, 0);
+        edgeGrid.add(lSrc, 0, 1); edgeGrid.add(edgeSource, 1, 1);
+        edgeGrid.add(lTgt, 0, 2); edgeGrid.add(edgeTarget, 1, 2);
+        edgeGrid.add(lW, 0, 3);   edgeGrid.add(edgeWidth, 1, 3);
+        edgeGrid.add(lDist, 0, 4); edgeGrid.add(edgeDistance, 1, 4);
         edgeGrid.add(edgeDirected, 1, 5);
-        Label edgeStatus = new Label();
-        Button addEdgeBtn = new Button("Add Edge");
+        Label edgeStatus = new Label(); edgeStatus.setStyle(labelStyle);
+        Button addEdgeBtn = new Button("Add Edge"); addEdgeBtn.setStyle(btnPrimary);
         addEdgeBtn.setOnAction(e -> {
             try {
                 String id = edgeId.getText().trim();
@@ -122,9 +149,9 @@ public class ConfigView {
 
         // SAVE / LOAD
         Label saveLoadTitle = new Label("Save / Load Plan");
-        saveLoadTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
-        Label saveLoadStatus = new Label();
-        Button saveBtn = new Button("Save Plan");
+        saveLoadTitle.setStyle(titleStyle);
+        Label saveLoadStatus = new Label(); saveLoadStatus.setStyle(labelStyle);
+        Button saveBtn = new Button("💾 Save Plan"); saveBtn.setStyle(btnSecondary);
         saveBtn.setOnAction(e -> {
             FileChooser fc = new FileChooser();
             fc.setTitle("Save Plan");
@@ -139,7 +166,7 @@ public class ConfigView {
                 }
             }
         });
-        Button loadBtn = new Button("Load Plan");
+        Button loadBtn = new Button("📂 Load Plan"); loadBtn.setStyle(btnSecondary);
         loadBtn.setOnAction(e -> {
             FileChooser fc = new FileChooser();
             fc.setTitle("Load Plan");
@@ -159,8 +186,8 @@ public class ConfigView {
         HBox saveLoadButtons = new HBox(10, saveBtn, loadBtn);
 
         // LAUNCH
-        Button launchBtn = new Button("Launch Simulation");
-        launchBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;");
+        Button launchBtn = new Button("▶ Lancer la simulation");
+        launchBtn.setStyle(btnPrimary + "-fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 13;");
         launchBtn.setOnAction(e -> {
             stage.close();
             Stage simStage = new Stage();
@@ -168,7 +195,7 @@ public class ConfigView {
         });
 
         // RETOUR
-        Button retourBtn = new Button("← Retour");
+        Button retourBtn = new Button("← Retour"); retourBtn.setStyle(btnSecondary);
         retourBtn.setOnAction(e -> {
             stage.close();
             Stage homeStage = new Stage();
@@ -191,12 +218,16 @@ public class ConfigView {
 
         VBox previewBox = new VBox(8);
         previewBox.setPadding(new Insets(15));
+        previewBox.setStyle("-fx-background-color: #424242;");
         Label previewTitle = new Label("Aperçu du graphe");
-        previewTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
+        previewTitle.setStyle("-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 14;");
         previewBox.getChildren().addAll(previewTitle, previewCanvas);
 
-        // Layout principal : formulaire à gauche, aperçu à droite
-        HBox mainLayout = new HBox(10, new ScrollPane(form), previewBox);
+        ScrollPane scrollForm = new ScrollPane(form);
+        scrollForm.setStyle("-fx-background-color: #424242; -fx-background: #424242;");
+
+        HBox mainLayout = new HBox(10, scrollForm, previewBox);
+        mainLayout.setStyle("-fx-background-color: #424242;");
 
         Scene scene = new Scene(mainLayout, 1060, 720);
         stage.setScene(scene);
