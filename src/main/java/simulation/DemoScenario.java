@@ -21,37 +21,49 @@ import model.agent.AgentType;
  */
 public class DemoScenario {
 
+    private static Graph lastGraph;
+    public static Graph getLastGraph() { return lastGraph; }
 
     public static Graph createGraph() {
         Graph g = new Graph();
-        Node n1 = new Node("N1", "Room A",     50,  50,  10, NodeStatus.OPEN, NodeType.ROOM,      1.0f);
-        Node n2 = new Node("N2", "Corridor 1", 250, 50,  10, NodeStatus.OPEN, NodeType.CORRIDOR,  1.0f);
-        Node n3 = new Node("N3", "Room B",     450, 50,  10, NodeStatus.OPEN, NodeType.ROOM,      1.0f);
-        Node n4 = new Node("N4", "Staircase",  450, 250, 10, NodeStatus.OPEN, NodeType.STAIRCASE, 1.0f);
-        Node n5 = new Node("N5", "Corridor 2", 250, 250, 10, NodeStatus.OPEN, NodeType.CORRIDOR,  1.0f);
-        Node n6 = new Node("N6", "Room C",     50,  250, 10, NodeStatus.OPEN, NodeType.ROOM,      1.0f);
-        Node n7 = new Node("N7", "Exit",       250, 420, 10, NodeStatus.OPEN, NodeType.EXIT,      1.0f);
-        g.addNode(n1); g.addNode(n2); g.addNode(n3);
-        g.addNode(n4); g.addNode(n5); g.addNode(n6); g.addNode(n7);
-        g.addEdge(new Edge("E1", n1, n2, 5, 1.0f, 1.0f, false));
-        g.addEdge(new Edge("E2", n2, n3, 5, 1.0f, 1.0f, false));
-        g.addEdge(new Edge("E3", n3, n4, 5, 1.0f, 1.0f, false));
-        g.addEdge(new Edge("E4", n4, n5, 5, 1.0f, 1.0f, false));
-        g.addEdge(new Edge("E5", n5, n6, 5, 1.0f, 1.0f, false));
-        g.addEdge(new Edge("E6", n5, n7, 1, 1.0f, 1.0f, false));
-        g.addEdge(new Edge("E7", n2, n5, 5, 1.0f, 1.0f, false));
+        // Floor 2
+        Node n1  = new Node("N1",  "Room A",     30,  30,  20, NodeStatus.OPEN, NodeType.ROOM,      1.0f);
+        Node n2  = new Node("N2",  "Corridor 1", 200, 30,  10, NodeStatus.OPEN, NodeType.CORRIDOR,  1.0f);
+        Node n3  = new Node("N3",  "Room B",     370, 30,  18, NodeStatus.OPEN, NodeType.ROOM,      1.0f);
+        Node n4  = new Node("N4",  "Room C",     540, 30,  15, NodeStatus.OPEN, NodeType.ROOM,      1.0f);
+        // Floor 1
+        Node n5  = new Node("N5",  "Room D",     30,  200, 15, NodeStatus.OPEN, NodeType.ROOM,      1.0f);
+        Node n6  = new Node("N6",  "Staircase",  540, 200,  8, NodeStatus.OPEN, NodeType.STAIRCASE, 1.0f);
+        Node n7  = new Node("N7",  "Corridor 2", 130, 350, 10, NodeStatus.OPEN, NodeType.CORRIDOR,  1.0f);
+        Node n8  = new Node("N8",  "Corridor 3", 400, 350, 10, NodeStatus.OPEN, NodeType.CORRIDOR,  1.0f);
+        // Exits
+        Node n9  = new Node("N9",  "Exit 1",     80,  460, 50, NodeStatus.OPEN, NodeType.EXIT,      1.0f);
+        Node n10 = new Node("N10", "Exit 2",     400, 460, 50, NodeStatus.OPEN, NodeType.EXIT,      1.0f);
+
+        g.addNode(n1); g.addNode(n2); g.addNode(n3); g.addNode(n4);
+        g.addNode(n5); g.addNode(n6); g.addNode(n7); g.addNode(n8);
+        g.addNode(n9); g.addNode(n10);
+
+        g.addEdge(new Edge("E1",  n1,  n2,  5, 1.0f, 1.0f, false)); // Room A → Corridor 1
+        g.addEdge(new Edge("E2",  n2,  n3,  4, 1.0f, 1.0f, false)); // Corridor 1 → Room B
+        g.addEdge(new Edge("E3",  n3,  n4,  5, 1.0f, 1.0f, false)); // Room B → Room C
+        g.addEdge(new Edge("E4",  n2,  n5,  3, 1.0f, 1.0f, false)); // Corridor 1 → Room D (étroit)
+        g.addEdge(new Edge("E5",  n4,  n6,  3, 1.0f, 1.0f, false)); // Room C → Staircase (étroit)
+        g.addEdge(new Edge("E6",  n5,  n7,  6, 1.0f, 1.0f, false)); // Room D → Corridor 2
+        g.addEdge(new Edge("E7",  n6,  n8,  4, 1.0f, 1.0f, false)); // Staircase → Corridor 3
+        g.addEdge(new Edge("E8",  n3,  n8,  5, 1.0f, 1.0f, false)); // Room B → Corridor 3
+        g.addEdge(new Edge("E9",  n7,  n9,  2, 1.0f, 1.0f, false)); // Corridor 2 → Exit 1 (goulot)
+        g.addEdge(new Edge("E10", n8,  n10, 3, 1.0f, 1.0f, false)); // Corridor 3 → Exit 2
+        g.addEdge(new Edge("E11", n7,  n8,  4, 1.0f, 1.0f, false)); // Corridor 2 ↔ Corridor 3
         return g;
     }
-    private static Graph lastGraph;
-    public static Graph getLastGraph() { return lastGraph; }
-    
     /**
      * Best case : all agents are CALM, all exits open, nodes filled at 50%.
      */
     public static List<Agent> bestCase() {
         Graph g = createGraph();
         lastGraph = g;
-        return createAgents(g, 0.5f, AgentState.CALM, null, null);
+        return createAgents(g, 0.2f, AgentState.CALM, null, null);
     }
 
     /**
@@ -59,14 +71,15 @@ public class DemoScenario {
      */
     public static List<Agent> averageCase() {
         Graph g = createGraph();
+        // Narrow corridor to Exit 1 to w=1 — visible bottleneck
         for (Edge e : g.getEdges()) {
-            if (e.getId().equals("E6")) {
+            if (e.getId().equals("E9")) {
                 e.setWidth(1);
                 break;
             }
         }
         lastGraph = g;
-        return createAgents(g, 0.5f, null, null, null);  // null = alternates CALM/INJURED
+        return createAgents(g, 0.55f, null, null, null);  // null = alternates CALM/INJURED
     }
 
     /**
@@ -74,14 +87,22 @@ public class DemoScenario {
      */
     public static List<Agent> worstCase() {
         Graph g = createGraph();
+        // Block Exit 2 entirely
         for (Node n : g.getNodes()) {
-            if (n.getType() == NodeType.EXIT) {
+            if (n.getId().equals("N10")) {
                 n.setStatus(NodeStatus.BLOCKED);
                 break;
             }
         }
+        // Also narrow Exit 1 corridor to w=1 — total chaos
+        for (Edge e : g.getEdges()) {
+            if (e.getId().equals("E9")) {
+                e.setWidth(1);
+                break;
+            }
+        }
         lastGraph = g;
-        return createAgents(g, 0.7f, AgentState.PANICKED, null, null);
+        return createAgents(g, 0.85f, AgentState.PANICKED, null, null);
     }
 
     /**
