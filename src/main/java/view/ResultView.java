@@ -36,6 +36,17 @@ public class ResultView {
 
         Label ticksLabel = statLabel("⏱ Temps d'évacuation", ticks + " ticks");
         Label evacuatedLabel = statLabel("👥 Agents évacués", String.valueOf(evacuated));
+        Button retourButton = new Button("Retour");
+        retourButton.setLayoutX(50);
+        retourButton.setLayoutY(500);
+        
+        retourButton.setOnAction(e -> {
+            try {
+                new HomeView().start(stage);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
 
         VBox statsBox = new VBox(16, ticksLabel, evacuatedLabel);
         statsBox.setAlignment(Pos.CENTER);
