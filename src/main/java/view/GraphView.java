@@ -36,6 +36,19 @@ public class GraphView {
     // Position du dernier clic pour placer un nouveau nœud
     private double lastClickX = 100;
     private double lastClickY = 100;
+    
+    private double zoom = 1.0;
+
+    private double offsetX = 0;
+    private double offsetY = 0;
+
+    private double dragStartX;
+    private double dragStartY;
+
+    private boolean draggingCanvas = false;
+    private boolean draggingNode = false;
+
+    private Node draggedNode = null;
 
     // Mode connexion : on attend un deuxième clic pour créer une arête
     private boolean connectMode = false;
@@ -124,6 +137,60 @@ public class GraphView {
             selectedEdge = null;
             selectedAgent = null;
             drawGraph();
+        });
+        
+        canvas.setOnScroll(event -> {
+            if (event.getDeltaY() > 0) {
+                zoom *= 1.1;
+            } else {
+                zoom /= 1.1;
+            }
+
+            drawGraph();
+        });
+        
+        canvas.setOnMousePressed(event -> {
+
+            dragStartX = event.getX();
+            dragStartY = event.getY();
+
+            for (Node node : nodes) {
+                if (hitNode(node, event.getX(), event.getY())) {
+                    draggedNode = node;
+                    draggingNode = true;
+                    return;
+                }
+            }
+
+            draggingCanvas = true;
+        });
+        
+        canvas.setOnMouseDragged(event -> {
+
+            double dx = event.getX() - dragStartX;
+            double dy = event.getY() - dragStartY;
+
+            if (draggingNode && draggedNode != null) {
+
+                draggedNode.setX(draggedNode.getX() + dx);
+                draggedNode.setY(draggedNode.getY() + dy);
+
+            } else if (draggingCanvas) {
+
+                offsetX += dx;
+                offsetY += dy;
+            }
+
+            dragStartX = event.getX();
+            dragStartY = event.getY();
+
+            drawGraph();
+        });
+        
+        canvas.setOnMouseReleased(event -> {
+            draggingCanvas = false;
+            draggingNode = false;
+            draggedNode = null;
         });
     }
 
@@ -222,6 +289,11 @@ public class GraphView {
 
     public void drawGraph() {
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        
+        gc.save();
+
+        gc.translate(offsetX, offsetY);
+        gc.scale(zoom, zoom);
 
         // Mode connexion — afficher un message
         if (connectMode) {
@@ -390,6 +462,8 @@ public class GraphView {
             gc.fillText("(Cliquez 'Add Edge'", px, py + 100);
             gc.fillText(" pour connecter)", px, py + 115);
         }
+        
+        gc.restore();
     }
 
     private Color agentColor(Agent agent) {
