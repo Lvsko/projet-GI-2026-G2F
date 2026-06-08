@@ -33,21 +33,18 @@ public class GraphView {
     private SimulationEngine engine;
     private int nodeCounter;
 
-    // Position du dernier clic pour placer un nouveau nœud
+    // Position du dernier clic pour placer un nouveau nœud (en coordonnées monde)
     private double lastClickX = 100;
     private double lastClickY = 100;
-    
-    private double zoom = 1.0;
 
+    // Zoom et déplacement du canvas
+    private double zoom = 1.0;
     private double offsetX = 0;
     private double offsetY = 0;
-
     private double dragStartX;
     private double dragStartY;
-
     private boolean draggingCanvas = false;
     private boolean draggingNode = false;
-
     private Node draggedNode = null;
 
     // Mode connexion : on attend un deuxième clic pour créer une arête
@@ -63,8 +60,9 @@ public class GraphView {
         this.nodeCounter = nodes.size();
 
         canvas.setOnMouseClicked(event -> {
-            double mouseX = event.getX();
-            double mouseY = event.getY();
+            // Convertir les coordonnées écran en coordonnées monde
+            double mouseX = toWorldX(event.getX());
+            double mouseY = toWorldY(event.getY());
             lastClickX = mouseX;
             lastClickY = mouseY;
 
@@ -138,61 +136,60 @@ public class GraphView {
             selectedAgent = null;
             drawGraph();
         });
-        
+
         canvas.setOnScroll(event -> {
             if (event.getDeltaY() > 0) {
                 zoom *= 1.1;
             } else {
                 zoom /= 1.1;
             }
-
             drawGraph();
         });
-        
-        canvas.setOnMousePressed(event -> {
 
+        canvas.setOnMousePressed(event -> {
             dragStartX = event.getX();
             dragStartY = event.getY();
-
+            // Convertir en coordonnées monde pour tester les nœuds
+            double wx = toWorldX(event.getX());
+            double wy = toWorldY(event.getY());
             for (Node node : nodes) {
-                if (hitNode(node, event.getX(), event.getY())) {
+                if (hitNode(node, wx, wy)) {
                     draggedNode = node;
                     draggingNode = true;
                     return;
                 }
             }
-
             draggingCanvas = true;
         });
-        
-        canvas.setOnMouseDragged(event -> {
 
+        canvas.setOnMouseDragged(event -> {
             double dx = event.getX() - dragStartX;
             double dy = event.getY() - dragStartY;
-
             if (draggingNode && draggedNode != null) {
-
-                draggedNode.setX(draggedNode.getX() + dx);
-                draggedNode.setY(draggedNode.getY() + dy);
-
+                // Diviser par zoom pour que le déplacement soit cohérent
+                draggedNode.setX(draggedNode.getX() + dx / zoom);
+                draggedNode.setY(draggedNode.getY() + dy / zoom);
             } else if (draggingCanvas) {
-
                 offsetX += dx;
                 offsetY += dy;
             }
-
             dragStartX = event.getX();
             dragStartY = event.getY();
-
             drawGraph();
         });
-        
+
         canvas.setOnMouseReleased(event -> {
             draggingCanvas = false;
             draggingNode = false;
             draggedNode = null;
         });
     }
+
+    /** Convertit une coordonnée X écran en coordonnée monde */
+    private double toWorldX(double screenX) { return (screenX - offsetX) / zoom; }
+
+    /** Convertit une coordonnée Y écran en coordonnée monde */
+    private double toWorldY(double screenY) { return (screenY - offsetY) / zoom; }
 
     /** Vérifie si un clic touche un nœud */
     private boolean hitNode(Node node, double x, double y) {
@@ -222,7 +219,6 @@ public class GraphView {
 
     /** Spawns a new agent at the first available room node */
     public void spawnAgentAtRoom() {
-        // Si un nœud est sélectionné, spawner dessus
         Node target = selectedNode;
         if (target == null) {
             for (Node node : nodes) {
@@ -236,7 +232,7 @@ public class GraphView {
         drawGraph();
     }
 
-    /** Adds a new room node at the last clicked position */
+    /** Adds a new room node at the last clicked position (world coordinates) */
     public void addRoomNode() {
         String id = "N" + (nodeCounter + 1);
         Node newNode = new Node(id, "Room " + (nodeCounter + 1), lastClickX - 60, lastClickY - 30,
@@ -289,9 +285,9 @@ public class GraphView {
 
     public void drawGraph() {
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        
-        gc.save();
 
+        // --- Rendu avec zoom et offset (coordonnées monde) ---
+        gc.save();
         gc.translate(offsetX, offsetY);
         gc.scale(zoom, zoom);
 
@@ -425,7 +421,10 @@ public class GraphView {
             }
         }
 
-        // Compteur évacués
+        gc.restore();
+        // --- Fin du rendu monde, retour en coordonnées écran ---
+
+        // Compteur évacués (fixe sur l'écran, indépendant du zoom)
         if (engine != null) {
             int evacuated = engine.getStatistics().getEvacuatedCount();
             gc.setFill(Color.DARKGREEN);
@@ -434,7 +433,7 @@ public class GraphView {
             gc.fillText("Évacués : " + evacuated, 630, 32);
         }
 
-        // Panneau info selon sélection
+        // Panneau info selon sélection (fixe sur l'écran)
         double px = 620;
         double py = 55;
         if (selectedAgent != null) {
@@ -462,8 +461,6 @@ public class GraphView {
             gc.fillText("(Cliquez 'Add Edge'", px, py + 100);
             gc.fillText(" pour connecter)", px, py + 115);
         }
-        
-        gc.restore();
     }
 
     private Color agentColor(Agent agent) {
