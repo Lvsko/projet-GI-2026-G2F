@@ -4,6 +4,9 @@ import model.Graph;
 import model.node.Node;
 import model.Edge;
 import model.agent.Agent;
+import model.agent.AgentBehavior;
+import model.agent.AgentState;
+import model.agent.AgentType;
 import model.node.NodeStatus;
 import model.node.NodeType;
 import simulation.SimulationState;
@@ -18,6 +21,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Configuration form for manually adding nodes and edges to the graph.
@@ -28,6 +32,7 @@ public class ConfigView {
     private Graph graph;
     private GraphView preview;
     private Canvas previewCanvas;
+    private List<Agent> agents = new ArrayList<>();
 
     public ConfigView() {
         this.graph = new Graph();
@@ -147,6 +152,76 @@ public class ConfigView {
             }
         });
 
+        // ADD AGENTS
+        Label agentTitle = new Label("Add Agents");
+        agentTitle.setStyle(titleStyle);
+        GridPane agentGrid = new GridPane();
+        agentGrid.setHgap(10); agentGrid.setVgap(8);
+
+        ComboBox<Node> agentNode = new ComboBox<>();
+        agentNode.setPromptText("Select start node");
+        agentNode.setStyle(fieldStyle);
+        agentNode.setOnShowing(e -> agentNode.getItems().setAll(graph.getNodes()));
+
+        TextField agentCount = new TextField();
+        agentCount.setPromptText("Number of agents (e.g. 3)");
+        agentCount.setStyle(fieldStyle);
+
+        ComboBox<AgentState> agentState = new ComboBox<>();
+        agentState.getItems().addAll(AgentState.values());
+        agentState.setValue(AgentState.CALM);
+        agentState.setStyle(fieldStyle);
+
+        ComboBox<AgentType> agentType = new ComboBox<>();
+        agentType.getItems().addAll(AgentType.values());
+        agentType.setValue(AgentType.ADULT);
+        agentType.setStyle(fieldStyle);
+
+        ComboBox<AgentBehavior> agentBehavior = new ComboBox<>();
+        agentBehavior.getItems().addAll(AgentBehavior.values());
+        agentBehavior.setValue(AgentBehavior.COOPERATIVE);
+        agentBehavior.setStyle(fieldStyle);
+
+        Label lAN = new Label("Start Node:"); lAN.setStyle(labelStyle);
+        Label lAC = new Label("Count:");      lAC.setStyle(labelStyle);
+        Label lAS = new Label("State:");      lAS.setStyle(labelStyle);
+        Label lAT = new Label("Type:");       lAT.setStyle(labelStyle);
+        Label lAB = new Label("Behavior:");   lAB.setStyle(labelStyle);
+
+        agentGrid.add(lAN, 0, 0); agentGrid.add(agentNode,     1, 0);
+        agentGrid.add(lAC, 0, 1); agentGrid.add(agentCount,    1, 1);
+        agentGrid.add(lAS, 0, 2); agentGrid.add(agentState,    1, 2);
+        agentGrid.add(lAT, 0, 3); agentGrid.add(agentType,     1, 3);
+        agentGrid.add(lAB, 0, 4); agentGrid.add(agentBehavior, 1, 4);
+
+        Label agentStatus = new Label(); agentStatus.setStyle(labelStyle);
+        Button addAgentBtn = new Button("Add Agents"); addAgentBtn.setStyle(btnPrimary);
+        addAgentBtn.setOnAction(e -> {
+            try {
+                Node startNode = agentNode.getValue();
+                int count = Integer.parseInt(agentCount.getText().trim());
+
+                if(startNode == null || count <= 0){
+                    agentStatus.setText("Error: select a node and enter a valid count.");
+                    return;
+                }
+
+                AgentState state = agentState.getValue();
+                AgentType type = agentType.getValue();
+                AgentBehavior behavior = agentBehavior.getValue();
+
+                for (int i = 0; i < count; i++) {
+                    agents.add(new Agent("agent_" + agents.size(), startNode, 1.0f, state, behavior, type, 0.5f, graph));
+                }
+
+
+
+                agentStatus.setText(count + " agent(s) added on '" + startNode.getId() + "'.");
+                agentCount.clear();
+            } catch (NumberFormatException ex) {
+                agentStatus.setText("Error: count must be a number.");
+            }
+        });
         // SAVE / LOAD
         Label saveLoadTitle = new Label("Save / Load Plan");
         saveLoadTitle.setStyle(titleStyle);
@@ -191,7 +266,7 @@ public class ConfigView {
         launchBtn.setOnAction(e -> {
             stage.close();
             Stage simStage = new Stage();
-            new MainView(graph, new ArrayList<Agent>(), "config").start(simStage);
+            new MainView(graph, agents, "config").start(simStage);
         });
 
         // RETOUR
@@ -206,6 +281,8 @@ public class ConfigView {
             nodeTitle, nodeGrid, addNodeBtn, nodeStatus,
             new Separator(),
             edgeTitle, edgeGrid, addEdgeBtn, edgeStatus,
+            new Separator(),
+            agentTitle, agentGrid, addAgentBtn, agentStatus,
             new Separator(),
             saveLoadTitle, saveLoadButtons, saveLoadStatus,
             new Separator(),
