@@ -71,7 +71,7 @@ public class MainView extends Application {
             engine.addAgent(agent);
         }
         renderer.setEngine(engine);
-        engine.start();
+        
 
         AnimationTimer timer = new AnimationTimer() {
             private long lastTick = 0;
@@ -91,15 +91,22 @@ public class MainView extends Application {
         };
         timer.start();
 
-        Button pauseButton = styledButton("⏸ Pause", "#2E7D32");
+        Button pauseButton = styledButton("▶ Démarrer", "#2E7D32");
         pauseButton.setOnAction(e -> {
             if (engine.isRunning()) {
                 engine.pause();
-                pauseButton.setText("▶ Resume");
+                pauseButton.setText("▶ Reprendre");
             } else {
                 engine.start();
                 pauseButton.setText("⏸ Pause");
             }
+        });
+
+        Button endButton = styledButton("⏹ Terminer", "#7B1F1F");
+        endButton.setOnAction(e -> {
+            engine.pause();
+            ResultView resultView = new ResultView();
+            stage.setScene(resultView.createScene(stage, engine));
         });
 
         Button spawnButton = styledButton("+ Agent", "#424242");
@@ -126,7 +133,7 @@ public class MainView extends Application {
             }
         });
 
-        HBox toolbar = new HBox(10, pauseButton, spawnButton, addNodeButton, addEdgeButton, removeButton, retourButton);
+        HBox toolbar = new HBox(10, pauseButton, endButton, spawnButton, addNodeButton, addEdgeButton, removeButton, retourButton);
         toolbar.setPadding(new Insets(10, 10, 10, 10));
         toolbar.setStyle("-fx-background-color: #303030;");
 
