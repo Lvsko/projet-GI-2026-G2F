@@ -11,6 +11,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import simulation.SimulationEngine;
+import simulation.Statistics;
+
 
 /**
  * Displays the results of a simulation.
@@ -19,6 +21,7 @@ import simulation.SimulationEngine;
 public class ResultView {
 
     public Scene createScene(Stage stage, SimulationEngine engine) {
+        Statistics stats = engine.getStatistics();
 
         Label title = new Label("RÉSULTATS");
         title.setFont(Font.font("Georgia", FontWeight.BOLD, 48));
@@ -31,21 +34,33 @@ public class ResultView {
         VBox titleBox = new VBox(6, title, subtitle);
         titleBox.setAlignment(Pos.CENTER);
 
-        int ticks = engine.getStatistics().getTotalTicks();
-        int evacuated = engine.getStatistics().getEvacuatedCount();
+        Label ticksLabel = statLabel("⏱ Temps d'évacuation", stats.getTotalTicks() + " ticks");
+        Label evacuatedLabel = statLabel("👥 Agents évacués", String.valueOf(stats.getEvacuatedCount()));
+        Label avgTimeLabel   = statLabel("⌀ Temps moyen", String.format("%.1f", stats.getAverageEvacuationTime()) + " ticks");  
 
-        Label ticksLabel = statLabel("⏱ Temps d'évacuation", ticks + " ticks");
-        Label evacuatedLabel = statLabel("👥 Agents évacués", String.valueOf(evacuated));
-        
-
-        VBox statsBox = new VBox(16, ticksLabel, evacuatedLabel);
-        statsBox.setAlignment(Pos.CENTER);
+        VBox statsBox = new VBox(16, ticksLabel, evacuatedLabel, avgTimeLabel);
+        statsBox.setAlignment(Pos.CENTER_LEFT);
         statsBox.setStyle(
             "-fx-background-color: #303030;" +
             "-fx-background-radius: 10;" +
             "-fx-padding: 24;"
         );
-        statsBox.setMaxWidth(300);
+        statsBox.setMaxWidth(400);
+
+        Label analysisTitle = new Label("ANALYSE");
+        analysisTitle.setFont(Font.font("Georgia", FontWeight.BOLD, 18));
+        analysisTitle.setTextFill(Color.web("#2E7D32"));
+
+        VBox analysisBox = new VBox(8, analysisTitle, new Separator());
+        for (String line : stats.generateAnalysis()) {
+            analysisBox.getChildren().add(statLabel("•", line));
+        }
+        analysisBox.setStyle(
+            "-fx-background-color: #303030;" +
+            "-fx-background-radius: 10;" +
+            "-fx-padding: 24;"
+        );
+        analysisBox.setMaxWidth(400);
 
         Button retourButton = new Button("← Retour à l'accueil");
         retourButton.setFont(Font.font("Georgia", FontWeight.BOLD, 14));
@@ -62,9 +77,10 @@ public class ResultView {
             new HomeView().start(homeStage);
         });
 
-        VBox root = new VBox(40, titleBox, statsBox, retourButton);
+        VBox root = new VBox(30, titleBox, statsBox, analysisBox, retourButton);
         root.setAlignment(Pos.CENTER);
         root.setStyle("-fx-background-color: #424242;");
+        root.setPadding(new javafx.geometry.Insets(30));
 
         return new Scene(root, 600, 450);
     }
