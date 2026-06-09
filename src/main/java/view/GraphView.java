@@ -14,6 +14,19 @@ import simulation.SimulationEngine;
 import java.util.ArrayList;
 import java.util.List;
 
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.scene.control.Button;
+import javafx.scene.Scene;
+import javafx.scene.control.TextField;
+
+import model.agent.AgentState;
+import model.agent.AgentBehavior;
+import model.agent.AgentType;
+
 /**
  * Handles the 2D rendering of the graph, agents and nodes.
  * @author Leonardo
@@ -71,13 +84,60 @@ public class GraphView {
                 for (Node node : nodes) {
                     if (hitNode(node, mouseX, mouseY) && !node.equals(connectSource)) {
                         String edgeId = "E" + (edges.size() + 1);
-                        Edge newEdge = new Edge(edgeId, connectSource, node, 5, 1.0f, 1.0f, false);
-                        edges.add(newEdge);
-                        graph.addEdge(newEdge);
-                        connectMode = false;
-                        connectSource = null;
-                        drawGraph();
-                        return;
+                        Stage popup = new Stage();
+                        popup.initModality(Modality.APPLICATION_MODAL);
+                        popup.setTitle("Nouvelle arête");
+
+                        TextField widthField = new TextField("5");
+                        TextField distanceField = new TextField("1.0");
+                        TextField speedField = new TextField("1.0");
+
+                        ComboBox<Boolean> directedBox = new ComboBox<>();
+                        directedBox.getItems().addAll(false, true);
+                        directedBox.setValue(false);
+
+                        Button createButton = new Button("Créer");
+                        createButton.setOnAction(e -> {
+
+                            Edge newEdge = new Edge(
+                                edgeId,
+                                connectSource,
+                                node,
+                                Integer.parseInt(widthField.getText()),
+                                Float.parseFloat(distanceField.getText()),
+                                Float.parseFloat(speedField.getText()),
+                                directedBox.getValue()
+                            );
+
+                            edges.add(newEdge);
+                            graph.addEdge(newEdge);
+
+                            connectMode = false;
+                            connectSource = null;
+
+                            drawGraph();
+
+                            popup.close();
+                        });
+                        
+                        VBox layout = new VBox(
+                        	    10,
+                        	    new Label("Largeur"),
+                        	    widthField,
+                        	    new Label("Distance"),
+                        	    distanceField,
+                        	    new Label("Speed Modifier"),
+                        	    speedField,
+                        	    new Label("Directed"),
+                        	    directedBox,
+                        	    createButton
+                        	);
+
+                        	layout.setStyle("-fx-padding: 10;");
+                        	
+                        	Scene scene = new Scene(layout, 300, 300);
+                        	popup.setScene(scene);
+                        	popup.showAndWait();
                     }
                 }
                 // Clic dans le vide — annuler le mode connexion
@@ -226,21 +286,129 @@ public class GraphView {
             }
         }
         if (target == null) return;
-        Agent agent = new Agent(target, graph);
-        agents.add(agent);
-        if (engine != null) engine.addAgent(agent);
-        drawGraph();
+        final Node finalTarget = target;
+        Stage popup = new Stage();
+        popup.initModality(Modality.APPLICATION_MODAL);
+        popup.setTitle("Nouvel Agent");
+
+        ComboBox<AgentState> stateBox = new ComboBox<>();
+        stateBox.getItems().addAll(AgentState.values());
+        stateBox.setValue(AgentState.CALM);
+
+        ComboBox<AgentBehavior> behaviorBox = new ComboBox<>();
+        behaviorBox.getItems().addAll(AgentBehavior.values());
+        behaviorBox.setValue(AgentBehavior.COOPERATIVE);
+
+        ComboBox<AgentType> typeBox = new ComboBox<>();
+        typeBox.getItems().addAll(AgentType.values());
+        typeBox.setValue(AgentType.ADULT);
+
+        Button createButton = new Button("Créer");
+        
+        createButton.setOnAction(e -> {
+
+            Agent agent = new Agent(
+                "agent" + System.currentTimeMillis(),
+                finalTarget,
+                1.0f,
+                stateBox.getValue(),
+                behaviorBox.getValue(),
+                typeBox.getValue(),
+                0.5f,
+                graph
+            );
+
+            agents.add(agent);
+
+            if (engine != null) {
+                engine.addAgent(agent);
+            }
+
+            drawGraph();
+            popup.close();
+        });
+        
+        VBox layout = new VBox(
+        	    10,
+        	    new Label("État"),
+        	    stateBox,
+        	    new Label("Comportement"),
+        	    behaviorBox,
+        	    new Label("Type"),
+        	    typeBox,
+        	    createButton
+        	);
+
+        	layout.setStyle("-fx-padding: 10;");
+        	
+        	Scene scene = new Scene(layout, 250, 250);
+        	popup.setScene(scene);
+        	popup.showAndWait();
     }
 
     /** Adds a new room node at the last clicked position (world coordinates) */
     public void addRoomNode() {
         String id = "N" + (nodeCounter + 1);
-        Node newNode = new Node(id, "Room " + (nodeCounter + 1), lastClickX - 60, lastClickY - 30,
-                10, NodeStatus.OPEN, NodeType.ROOM, 1.0f);
-        nodes.add(newNode);
-        graph.addNode(newNode);
-        nodeCounter++;
-        drawGraph();
+        Stage popup = new Stage();
+        popup.initModality(Modality.APPLICATION_MODAL);
+        popup.setTitle("Nouveau noeud");
+        TextField nameField = new TextField("Room " + (nodeCounter + 1));
+
+        ComboBox<NodeType> typeBox = new ComboBox<>();
+        typeBox.getItems().addAll(NodeType.values());
+        typeBox.setValue(NodeType.ROOM);
+
+        ComboBox<NodeStatus> statusBox = new ComboBox<>();
+        statusBox.getItems().addAll(NodeStatus.values());
+        statusBox.setValue(NodeStatus.OPEN);
+
+        TextField capacityField = new TextField("10");
+
+        TextField attractivenessField = new TextField("1.0");
+        Button createButton = new Button("Créer");
+        
+        createButton.setOnAction(e -> {
+
+            Node newNode = new Node(
+                id,
+                nameField.getText(),
+                lastClickX - 60,
+                lastClickY - 30,
+                Integer.parseInt(capacityField.getText()),
+                statusBox.getValue(),
+                typeBox.getValue(),
+                Float.parseFloat(attractivenessField.getText())
+            );
+
+            nodes.add(newNode);
+            graph.addNode(newNode);
+
+            nodeCounter++;
+
+            drawGraph();
+
+            popup.close();
+        });
+        VBox layout = new VBox(
+        	    10,
+        	    new Label("Nom"),
+        	    nameField,
+        	    new Label("Type"),
+        	    typeBox,
+        	    new Label("Statut"),
+        	    statusBox,
+        	    new Label("Capacité"),
+        	    capacityField,
+        	    new Label("Attractivité"),
+        	    attractivenessField,
+        	    createButton
+        	);
+
+        	layout.setStyle("-fx-padding: 10;");
+        	
+        	Scene scene = new Scene(layout, 300, 350);
+        	popup.setScene(scene);
+        	popup.showAndWait();
     }
 
     /** Active le mode connexion pour ajouter une arête depuis le nœud sélectionné */
