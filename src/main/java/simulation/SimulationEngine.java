@@ -77,7 +77,7 @@ public class SimulationEngine {
             agents.remove(agent);
             tickCounters.remove(agent);
             stuckCounters.remove(agent);
-            statistics.incrementEvacuated();
+            statistics.recordAgentEvacuated(agent.getId(), currentTick);
         }
         exitingAgents.clear();
 
@@ -91,7 +91,7 @@ public class SimulationEngine {
         // Move evacuated agents to exitingAgents (visible 1 tick at EXIT)
         exitingAgents.addAll(evacuatedAgents);
 
-        statistics.update(currentTick, (ArrayList<Agent>) agents);
+        statistics.update(currentTick, (ArrayList<Agent>) agents, graph);
     }
 
     /** Moves an agent one step forward */
@@ -132,6 +132,7 @@ public class SimulationEngine {
 
                 if (edge != null) {
                     if (edge.isAvailable() && agent.moveToEdge(edge)) {
+                        statistics.recordAgentPassedEdge(edge);
                         agent.getCurrentPath().remove(0);
                         stuckCounters.put(agent, 0);
                         // Exit immédiat si la destination est EXIT
@@ -143,6 +144,7 @@ public class SimulationEngine {
                         }
                         if (destination.getType() == model.node.NodeType.EXIT) {
                             agent.arriveAt(destination);
+                            statistics.recordAgentPassedNode(destination);
                             destination.removeAgent(agent);
                             return true;
                         }
