@@ -23,7 +23,7 @@ import javafx.scene.control.Button;
 import javafx.scene.Scene;
 import javafx.scene.control.TextField;
 
-import model.agent.AgentState;
+
 import model.agent.AgentBehavior;
 import model.agent.AgentType;
 
@@ -138,6 +138,7 @@ public class GraphView {
                         	Scene scene = new Scene(layout, 300, 300);
                         	popup.setScene(scene);
                         	popup.showAndWait();
+                            return;
                     }
                 }
                 // Clic dans le vide — annuler le mode connexion
