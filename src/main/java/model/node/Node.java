@@ -60,6 +60,8 @@ public class Node implements Serializable {
     public String getName() { return name; }
     public double getX() { return x; }
     public double getY() { return y; }
+    public void setX(double x) { this.x = x; }
+    public void setY(double y) { this.y = y; }
     public int getMaxCapacity() { return maxCapacity; }
     public NodeStatus getStatus() { return status; }
     public void setStatus(NodeStatus status) { this.status = status; }
