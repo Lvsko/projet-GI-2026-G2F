@@ -102,10 +102,6 @@ public class Statistics {
         evacuatedCount++;
     }
 	
-	/** Increments the evacuated count when an agent reaches the EXIT */
-	public void incrementEvacuated() {
-		evacuatedCount++;
-	}
 
 	/** Returns the average evacuation time across all evacuated agents */
     public float getAverageEvacuationTime() {
