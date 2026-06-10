@@ -38,10 +38,25 @@ public class ConfigView {
         this.graph = new Graph();
     }
 
+    private <T> void darkCombo(ComboBox<T> combo) {
+        combo.setStyle("-fx-background-color: #303030; -fx-border-color: #616161; -fx-border-radius: 4;");
+        combo.setButtonCell(new ListCell<T>() {
+            @Override
+            protected void updateItem(T item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.toString());
+                    setStyle("-fx-text-fill: #e0e0e0; -fx-background-color: #303030;");
+                }
+            }
+        });
+    }
+
     public void start(Stage stage) {
         stage.setTitle("Configure Graph");
 
-        // --- FORMULAIRE (gauche) ---
         String labelStyle = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial;";
         String titleStyle = "-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 14;";
         String fieldStyle = "-fx-background-color: #303030; -fx-text-fill: #e0e0e0; -fx-border-color: #616161; -fx-border-radius: 4;";
@@ -69,7 +84,7 @@ public class ConfigView {
         nodeType.setValue(NodeType.ROOM);
         nodeId.setStyle(fieldStyle); nodeName.setStyle(fieldStyle);
         nodeCapacity.setStyle(fieldStyle); nodeX.setStyle(fieldStyle); nodeY.setStyle(fieldStyle);
-        nodeType.setStyle(fieldStyle);
+        darkCombo(nodeType);
 
         Label lId1 = new Label("ID:"); lId1.setStyle(labelStyle);
         Label lName = new Label("Name:"); lName.setStyle(labelStyle);
@@ -160,8 +175,8 @@ public class ConfigView {
 
         ComboBox<Node> agentNode = new ComboBox<>();
         agentNode.setPromptText("Select start node");
-        agentNode.setStyle(fieldStyle);
         agentNode.setOnShowing(e -> agentNode.getItems().setAll(graph.getNodes()));
+        darkCombo(agentNode);
 
         TextField agentCount = new TextField();
         agentCount.setPromptText("Number of agents (e.g. 3)");
@@ -170,17 +185,17 @@ public class ConfigView {
         ComboBox<AgentState> agentState = new ComboBox<>();
         agentState.getItems().addAll(AgentState.values());
         agentState.setValue(AgentState.CALM);
-        agentState.setStyle(fieldStyle);
+        darkCombo(agentState);
 
         ComboBox<AgentType> agentType = new ComboBox<>();
         agentType.getItems().addAll(AgentType.values());
         agentType.setValue(AgentType.ADULT);
-        agentType.setStyle(fieldStyle);
+        darkCombo(agentType);
 
         ComboBox<AgentBehavior> agentBehavior = new ComboBox<>();
         agentBehavior.getItems().addAll(AgentBehavior.values());
         agentBehavior.setValue(AgentBehavior.COOPERATIVE);
-        agentBehavior.setStyle(fieldStyle);
+        darkCombo(agentBehavior);
 
         Label lAN = new Label("Start Node:"); lAN.setStyle(labelStyle);
         Label lAC = new Label("Count:");      lAC.setStyle(labelStyle);
@@ -200,28 +215,23 @@ public class ConfigView {
             try {
                 Node startNode = agentNode.getValue();
                 int count = Integer.parseInt(agentCount.getText().trim());
-
-                if(startNode == null || count <= 0){
+                if (startNode == null || count <= 0) {
                     agentStatus.setText("Error: select a node and enter a valid count.");
                     return;
                 }
-
                 AgentState state = agentState.getValue();
                 AgentType type = agentType.getValue();
                 AgentBehavior behavior = agentBehavior.getValue();
-
                 for (int i = 0; i < count; i++) {
                     agents.add(new Agent("agent_" + agents.size(), startNode, 1.0f, state, behavior, type, 0.5f, graph));
                 }
-
-
-
                 agentStatus.setText(count + " agent(s) added on '" + startNode.getId() + "'.");
                 agentCount.clear();
             } catch (NumberFormatException ex) {
                 agentStatus.setText("Error: count must be a number.");
             }
         });
+
         // SAVE / LOAD
         Label saveLoadTitle = new Label("Save / Load Plan");
         saveLoadTitle.setStyle(titleStyle);
@@ -278,15 +288,15 @@ public class ConfigView {
         });
 
         form.getChildren().addAll(
-            nodeTitle, nodeGrid, addNodeBtn, nodeStatus,
-            new Separator(),
-            edgeTitle, edgeGrid, addEdgeBtn, edgeStatus,
-            new Separator(),
-            agentTitle, agentGrid, addAgentBtn, agentStatus,
-            new Separator(),
-            saveLoadTitle, saveLoadButtons, saveLoadStatus,
-            new Separator(),
-            launchBtn, retourBtn
+                nodeTitle, nodeGrid, addNodeBtn, nodeStatus,
+                new Separator(),
+                edgeTitle, edgeGrid, addEdgeBtn, edgeStatus,
+                new Separator(),
+                agentTitle, agentGrid, addAgentBtn, agentStatus,
+                new Separator(),
+                saveLoadTitle, saveLoadButtons, saveLoadStatus,
+                new Separator(),
+                launchBtn, retourBtn
         );
 
         // --- PREVIEW (droite) ---
@@ -310,11 +320,9 @@ public class ConfigView {
         stage.setScene(scene);
         stage.show();
 
-        // Dessiner le graphe initial (vide)
         preview.drawGraph();
     }
 
-    /** Recrée le GraphView avec le graphe courant et redessine */
     private void refreshPreview() {
         preview = new GraphView(previewCanvas, graph);
         preview.drawGraph();
