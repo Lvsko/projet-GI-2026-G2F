@@ -53,8 +53,12 @@ public class ResultView {
 
         VBox analysisBox = new VBox(8, analysisTitle, new Separator());
         for (String line : stats.generateAnalysis()) {
-            analysisBox.getChildren().add(statLabel("•", line));
-        }
+            Label l = new Label("• " + line);
+            l.setFont(Font.font("Arial", 14));
+            l.setTextFill(Color.web("#e0e0e0"));
+            l.setWrapText(true);
+            analysisBox.getChildren().add(l);
+    }
         analysisBox.setStyle(
             "-fx-background-color: #303030;" +
             "-fx-background-radius: 10;" +
@@ -82,7 +86,7 @@ public class ResultView {
         root.setStyle("-fx-background-color: #424242;");
         root.setPadding(new javafx.geometry.Insets(30));
 
-        return new Scene(root, 600, 450);
+        return new Scene(root, 600, 600);
     }
 
     private Label statLabel(String key, String value) {
