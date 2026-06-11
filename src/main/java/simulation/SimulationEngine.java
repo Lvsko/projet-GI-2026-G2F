@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * Controls the simulation loop and manages agent movements at each tick.
  * @author Yoni
- * @contributor Lassina (KAN-36 integration)
+ * @contributor Lassina (KAN-36 & Panic Propagation integration)
  */
 public class SimulationEngine {
 
@@ -36,6 +36,10 @@ public class SimulationEngine {
 
     // Agents waiting 1 tick at EXIT before being removed (visual effect)
     private List<Agent> exitingAgents;
+
+    // PANIC PROPAGATION MECHANICS
+    private static final float PANIC_PROBABILITY = 0.20f;
+    private final java.util.Random random = new java.util.Random();
 
     public SimulationEngine(Graph graph) {
         this.graph = graph;
@@ -90,6 +94,9 @@ public class SimulationEngine {
 
         // Move evacuated agents to exitingAgents (visible 1 tick at EXIT)
         exitingAgents.addAll(evacuatedAgents);
+
+        // Propagate panic before updating statistics
+        propagatePanic();
 
         statistics.update(currentTick, (ArrayList<Agent>) agents, graph);
     }
@@ -183,6 +190,47 @@ public class SimulationEngine {
             }
         }
         return null;
+    }
+
+    /**
+     * Spreads panic between agents sharing the same node.
+     * Emergent behavior: A calm agent has a 20% chance to become panicked
+     * if exposed to a panicked agent on the same node.
+     */
+    private void propagatePanic() {
+        Map<Node, List<Agent>> agentsOnNodes = new HashMap<>();
+
+        // Group agents by their current node (excluding those in transit in corridors)
+        for (Agent agent : agents) {
+            if (!agent.isInTransit() && agent.getCurrentNode() != null) {
+                agentsOnNodes.computeIfAbsent(agent.getCurrentNode(), k -> new ArrayList<>()).add(agent);
+            }
+        }
+
+        // Evaluate each node individually
+        for (List<Agent> nodeAgents : agentsOnNodes.values()) {
+            if (nodeAgents.size() < 2) continue; // Optimization
+
+            // Check if there is at least one PANICKED agent on this node
+            boolean hasPanickedAgent = false;
+            for (Agent a : nodeAgents) {
+                if (a.getState() == AgentState.PANICKED) {
+                    hasPanickedAgent = true;
+                    break;
+                }
+            }
+
+            // If "infected", roll the dice for CALM agents
+            if (hasPanickedAgent) {
+                for (Agent a : nodeAgents) {
+                    if (a.getState() == AgentState.CALM) {
+                        if (random.nextFloat() < PANIC_PROBABILITY) {
+                            a.setState(AgentState.PANICKED);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /** Adds an agent to the simulation */
