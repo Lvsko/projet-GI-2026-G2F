@@ -33,27 +33,80 @@ public class Graph implements Serializable {
     }
 
     /** Removes a node and all its connected edges from the graph */
-    public void removeNode(String id) {
+    public List<Agent> removeNode(String id) {
+        List<Agent> lostAgents = new ArrayList<>();
         Node toRemove = getNode(id);
-        if (toRemove == null) return;
+
+        if (toRemove == null) return lostAgents;
+
+        // RELOCATE AGENTS ON THE NODE
+        List<Agent> agentsOnNode = new ArrayList<>(toRemove.getAgents());
+        List<Node> neighbors = getNeighbors(toRemove);
+
+        if (!neighbors.isEmpty()) {
+            // Salvage operation: move everyone to the first available neighbor
+            Node safeHaven = neighbors.get(0);
+            for (Agent a : agentsOnNode) {
+                a.arriveAt(safeHaven);
+                // Note: The agent will need to recalculate its path at the next tick!
+            }
+        } else {
+            // No neighbors available, agents fall into the void
+            lostAgents.addAll(agentsOnNode);
+        }
+
+        // DELETE CONNECTED EDGES AND SALVAGE THEIR AGENTS
         List<Edge> toDelete = new ArrayList<>();
         for (Edge e : edges) {
             if (e.getSource().getId().equals(id) || e.getTarget().getId().equals(id)) {
                 toDelete.add(e);
             }
         }
-        edges.removeAll(toDelete);
+
+        for (Edge e : toDelete) {
+            List<Agent> agentsOnEdge = new ArrayList<>(e.getAgents());
+
+            for (Agent a : agentsOnEdge) {
+                // If the edge's source is the node we are currently deleting,
+                // sending them to the source is fatal. We send them to the target instead.
+                Node fallbackNode = e.getSource().getId().equals(id) ? e.getTarget() : e.getSource();
+
+                // Double check: if the fallback is ALSO being deleted (e.g. isolated graph segment),
+                // the agent is lost.
+                if (fallbackNode.getId().equals(id)) {
+                    lostAgents.add(a);
+                } else {
+                    a.arriveAt(fallbackNode);
+                }
+            }
+            edges.remove(e);
+        }
+
+        // FINAL CLEANUP
         nodes.remove(toRemove);
+
+        return lostAgents; // We return the casualties to the SimulationEngine
     }
 
     /** Removes an edge and moves its agents back to the source node */
-    public void removeEdge(String id) {
+    public List<Agent> removeEdge(String id) {
+        List<Agent> relocatedAgents = new ArrayList<>();
         Edge toRemove = getEdge(id);
-        if (toRemove == null) return;
-        for (Agent a : toRemove.getAgents()) {
-            toRemove.getSource().addAgent(a);
+
+        if (toRemove == null) return relocatedAgents;
+
+        // We make a copy of the list to avoid ConcurrentModificationException
+        // when agents are removed from the edge during iteration
+        List<Agent> agentsOnEdge = new ArrayList<>(toRemove.getAgents());
+
+        for (Agent a : agentsOnEdge) {
+            // Relocate the agent to the source node using its internal state method
+            a.arriveAt(toRemove.getSource());
+            relocatedAgents.add(a);
         }
+
         edges.remove(toRemove);
+        return relocatedAgents;
     }
 
     /** Returns the list of neighbors of a given node */
