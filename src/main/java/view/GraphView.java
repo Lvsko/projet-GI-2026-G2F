@@ -22,7 +22,7 @@ import javafx.stage.Stage;
 import javafx.scene.control.Button;
 import javafx.scene.Scene;
 import javafx.scene.control.TextField;
-
+import simulation.Pathfinder;
 
 import model.agent.AgentBehavior;
 import model.agent.AgentType;
@@ -430,9 +430,35 @@ public class GraphView {
             return;
         }
         if (selectedEdge != null) {
+
+            List<Agent> edgeAgents = new ArrayList<>(selectedEdge.getAgents());
+            
             edges.remove(selectedEdge);
             graph.removeEdge(selectedEdge.getId());
+
+            for (Agent agent : edgeAgents) {
+
+                Node fallbackNode = selectedEdge.getSource();
+
+                agent.arriveAt(fallbackNode);
+
+                Pathfinder pathfinder = new Pathfinder();
+
+                List<Node> newPath = pathfinder.dijkstraTime(
+                    fallbackNode,
+                    agent.getDestinationNode(),
+                    graph
+                );
+
+                if (newPath != null && !newPath.isEmpty()) {
+                    newPath.remove(0);
+                }
+
+                agent.setCurrentPath(newPath);
+            }
+
             selectedEdge = null;
+
             drawGraph();
             return;
         }
@@ -531,7 +557,45 @@ public class GraphView {
                 gc.fillText("agents: " + occupancy, node.getX() + 5, node.getY() + 50);
             }
         }
+        
+     // Dessin du chemin restant de l'agent en pointillés
+        if (selectedAgent != null && selectedAgent.getCurrentPath() != null
+                && !selectedAgent.getCurrentPath().isEmpty()) {
 
+            gc.setLineWidth(3);
+
+            gc.setLineDashes(10);
+
+            gc.setStroke(agentColor(selectedAgent));
+
+            Node start = selectedAgent.getCurrentNode();
+
+            if (start != null) {
+
+                Node previous = start;
+
+                for (Node next : selectedAgent.getCurrentPath()) {
+
+                    double x1 = previous.getX() + 60;
+                    double y1 = previous.getY() + 30;
+
+                    double x2 = next.getX() + 60;
+                    double y2 = next.getY() + 30;
+        // Halo blanc
+                    gc.setStroke(Color.WHITE);
+                    gc.setLineWidth(5);
+                    gc.strokeLine(x1, y1, x2, y2);
+        // Ligne de couleur de l'agent
+                    gc.setStroke(agentColor(selectedAgent));
+                    gc.setLineWidth(3);
+                    gc.strokeLine(x1, y1, x2, y2);
+
+                    previous = next;
+                }
+            }
+
+            gc.setLineDashes(null);
+        }
         // Draw agents
         List<Agent> agentsToDraw = (engine != null) ? engine.getAgents() : agents;
         java.util.Map<Node, List<Agent>> agentsByNode = new java.util.HashMap<>();
