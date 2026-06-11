@@ -1,5 +1,6 @@
 package simulation;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
@@ -16,6 +17,8 @@ import model.Graph;
  * @author Ruben
  */
 public class Statistics {
+	private static final long serialVersionUID = 1L;
+	
 	private int evacuatedCount;
 	private int totalTicks;
 	private List<Edge> bottlenecks;
