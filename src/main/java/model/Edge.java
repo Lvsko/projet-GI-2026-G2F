@@ -51,6 +51,17 @@ public class Edge implements Serializable {
     public void removeAgent(Agent agent) {
         agents.remove(agent);
     }
+
+    /**
+     * @return the effective speed modifier
+    */
+    public float getEffectiveSpeed() {
+        long injuredCount = agents.stream()
+            .filter(a -> a.getState() == model.agent.AgentState.INJURED)
+            .count();
+        float effective = this.speedModifier - (0.2f * injuredCount); 
+        return Math.max(effective, 0.1f);  // Minimum value is 0.1
+    }
     
     public void setWidth(int width) { this.width = width; }
 
