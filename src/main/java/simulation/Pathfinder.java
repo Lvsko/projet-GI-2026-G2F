@@ -14,7 +14,8 @@ import java.util.*;
 public class Pathfinder {
     // TODO - Lassina
     public List<Node> dijkstraDistance(Node start, Node destination, Graph graph) {
-
+        if (start == null || destination == null) return new ArrayList<>();
+        
         // 1. The distance map: Associates a node with its shortest distance from the start
         Map<Node, Float> distances = new HashMap<>();
 
@@ -120,7 +121,7 @@ public class Pathfinder {
     }
 
     public List<Node> dijkstraTime(Node start, Node destination, Graph graph) {
-
+        if (start == null || destination == null) return new ArrayList<>();
 
         Map<Node, Float> times = new HashMap<>();
         Map<Node, Node> previousNodes = new HashMap<>();
