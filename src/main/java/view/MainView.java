@@ -1,4 +1,5 @@
 package view;
+
 import model.Graph;
 import model.node.Node;
 import model.node.NodeStatus;
@@ -14,9 +15,11 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
+import javafx.scene.control.Slider;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -76,9 +79,7 @@ public class MainView extends Application {
         String statStyle = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial; -fx-font-size: 13;";
         String titleStyle = "-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 15;";
 
-        Label statsTitle = new Label("STATISTIQUES");
-        statsTitle.setStyle(titleStyle);
-
+        Label statsTitle    = new Label("STATISTIQUES");  statsTitle.setStyle(titleStyle);
         Label tickLabel     = new Label("Tick : 0");
         Label evacuatedLabel = new Label("Évacués : 0");
         Label remainingLabel = new Label("Restants : 0");
@@ -108,27 +109,56 @@ public class MainView extends Application {
         statsPanel.setPrefWidth(200);
         statsPanel.setStyle("-fx-background-color: #303030;");
 
+        // --- Slider de vitesse ---
+        // Valeur = nb de ticks par seconde (1 à 10)
+        // 1 tick/s → intervalle 1 000 ms   (lent)
+        // 10 ticks/s → intervalle 100 ms   (rapide)
+        Slider speedSlider = new Slider(1, 10, 1);
+        speedSlider.setShowTickMarks(true);
+        speedSlider.setShowTickLabels(true);
+        speedSlider.setMajorTickUnit(3);
+        speedSlider.setSnapToTicks(false);
+        speedSlider.setPrefWidth(180);
+        speedSlider.setStyle("-fx-control-inner-background: #303030;");
+
+        Label speedLabel = new Label("Vitesse : 1 tick/s");
+        speedLabel.setStyle("-fx-text-fill: #e0e0e0; -fx-font-size: 11;");
+
+        // tickInterval en nanosecondes, recalculé à chaque changement du slider
+        final long[] tickInterval = { 1_000_000_000L }; // 1 seconde par défaut
+
+        speedSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            double ticksPerSecond = newVal.doubleValue();
+            tickInterval[0] = (long) (1_000_000_000L / ticksPerSecond);
+            speedLabel.setText(String.format("Vitesse : %.1f tick/s", ticksPerSecond));
+        });
+
+        VBox speedBox = new VBox(4, speedLabel, speedSlider);
+        speedBox.setAlignment(Pos.CENTER_LEFT);
+
+        // --- Helper pour mettre à jour les stats ---
+        Runnable updateStats = () -> {
+            long calm     = engine.getAgents().stream().filter(a -> a.getState() == AgentState.CALM).count();
+            long panicked = engine.getAgents().stream().filter(a -> a.getState() == AgentState.PANICKED).count();
+            long injured  = engine.getAgents().stream().filter(a -> a.getState() == AgentState.INJURED).count();
+            tickLabel.setText("Tick : " + engine.getCurrentTick());
+            evacuatedLabel.setText("Évacués : " + engine.getStatistics().getEvacuatedCount());
+            remainingLabel.setText("Restants : " + engine.getAgents().size());
+            calmLabel.setText("Calmes : " + calm);
+            panickedLabel.setText("Paniqués : " + panicked);
+            injuredLabel.setText("Blessés : " + injured);
+        };
+
         // --- Timer ---
         AnimationTimer timer = new AnimationTimer() {
             private long lastTick = 0;
             @Override
             public void handle(long now) {
-                if (engine.isRunning() && now - lastTick >= 2_000_000_000L) {
+                if (engine.isRunning() && now - lastTick >= tickInterval[0]) {
                     engine.step();
                     renderer.drawGraph();
                     lastTick = now;
-
-                    // Mise à jour du panneau stats
-                    long calm     = engine.getAgents().stream().filter(a -> a.getState() == AgentState.CALM).count();
-                    long panicked = engine.getAgents().stream().filter(a -> a.getState() == AgentState.PANICKED).count();
-                    long injured  = engine.getAgents().stream().filter(a -> a.getState() == AgentState.INJURED).count();
-                    tickLabel.setText("Tick : " + engine.getCurrentTick());
-                    evacuatedLabel.setText("Évacués : " + engine.getStatistics().getEvacuatedCount());
-                    remainingLabel.setText("Restants : " + engine.getAgents().size());
-                    calmLabel.setText("Calmes : " + calm);
-                    panickedLabel.setText("Paniqués : " + panicked);
-                    injuredLabel.setText("Blessés : " + injured);
-
+                    updateStats.run();
                     if (engine.getAgents().isEmpty() && engine.getExitingAgents().isEmpty()) {
                         engine.pause();
                         ResultView resultView = new ResultView();
@@ -138,6 +168,9 @@ public class MainView extends Application {
             }
         };
         timer.start();
+
+        // Arrêter le timer si on ferme la fenêtre (robustesse)
+        stage.setOnCloseRequest(e -> timer.stop());
 
         // --- Boutons ---
         Button pauseButton = styledButton("▶ Démarrer", "#2E7D32");
@@ -151,14 +184,29 @@ public class MainView extends Application {
             }
         });
 
+        // Bouton pas à pas : avance d'un seul tick, uniquement si en pause
+        Button stepButton = styledButton("⏭ Pas", "#1565C0");
+        stepButton.setOnAction(e -> {
+            if (!engine.isRunning()) {
+                engine.step();
+                renderer.drawGraph();
+                updateStats.run();
+                if (engine.getAgents().isEmpty() && engine.getExitingAgents().isEmpty()) {
+                    ResultView resultView = new ResultView();
+                    stage.setScene(resultView.createScene(stage, engine));
+                }
+            }
+        });
+
         Button endButton = styledButton("⏹ Terminer", "#7B1F1F");
         endButton.setOnAction(e -> {
             engine.pause();
+            timer.stop();
             ResultView resultView = new ResultView();
             stage.setScene(resultView.createScene(stage, engine));
         });
 
-        Button spawnButton = styledButton("+ Agent", "#424242");
+        Button spawnButton  = styledButton("+ Agent", "#424242");
         spawnButton.setOnAction(e -> renderer.spawnAgentAtRoom());
 
         Button addNodeButton = styledButton("+ Node", "#424242");
@@ -173,6 +221,7 @@ public class MainView extends Application {
         Button retourButton = styledButton("← Retour", "#303030");
         retourButton.setOnAction(e -> {
             engine.pause();
+            timer.stop();
             stage.close();
             Stage prevStage = new Stage();
             if ("demo".equals(source)) {
@@ -182,8 +231,17 @@ public class MainView extends Application {
             }
         });
 
-        HBox toolbar = new HBox(10, pauseButton, endButton, spawnButton, addNodeButton, addEdgeButton, removeButton, retourButton);
-        toolbar.setPadding(new Insets(10, 10, 10, 10));
+        HBox toolbar = new HBox(10,
+            pauseButton, stepButton, endButton,
+            new Separator(),
+            speedBox,
+            new Separator(),
+            spawnButton, addNodeButton, addEdgeButton, removeButton,
+            new Separator(),
+            retourButton
+        );
+        toolbar.setPadding(new Insets(8, 10, 8, 10));
+        toolbar.setAlignment(Pos.CENTER_LEFT);
         toolbar.setStyle("-fx-background-color: #303030;");
 
         HBox mainContent = new HBox(canvas, statsPanel);
