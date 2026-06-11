@@ -320,6 +320,28 @@ public class GraphView {
         drawGraph();
     }
 
+    /**
+     * Vérifie si le chemin courant d'un agent emprunte l'arête src→tgt (ou tgt→src).
+     * Prend en compte la transition depuis le nœud courant vers le premier nœud du chemin.
+     */
+    private boolean pathUsesEdge(Agent agent, Node src, Node tgt) {
+        List<Node> path = agent.getCurrentPath();
+        if (path == null || path.isEmpty()) return false;
+        // Transition depuis le nœud courant vers le premier nœud du chemin
+        Node current = agent.getCurrentNode();
+        if (current != null) {
+            Node next = path.get(0);
+            if ((current.equals(src) && next.equals(tgt)) ||
+                (current.equals(tgt) && next.equals(src))) return true;
+        }
+        // Transitions internes au chemin
+        for (int i = 0; i < path.size() - 1; i++) {
+            if ((path.get(i).equals(src) && path.get(i + 1).equals(tgt)) ||
+                (path.get(i).equals(tgt) && path.get(i + 1).equals(src))) return true;
+        }
+        return false;
+    }
+
     /** Removes the currently selected element (node, edge or agent) */
     public void removeSelectedNode() {
         if (selectedAgent != null) {
@@ -331,17 +353,47 @@ public class GraphView {
         }
 
         if (selectedEdge != null) {
-            // Agents en transit sur l'arête → déplacer vers le nœud source
-            for (Agent agent : new ArrayList<>(selectedEdge.getAgents())) {
-                Node fallback = selectedEdge.getSource();
-                agent.arriveAt(fallback);
-                Pathfinder pf = new Pathfinder();
-                List<Node> newPath = pf.dijkstraTime(fallback, agent.getDestinationNode(), graph);
-                if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
-                agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
+            Node edgeSource = selectedEdge.getSource();
+            Node edgeTarget = selectedEdge.getTarget();
+
+            // Sauvegarder les agents en transit sur l'arête
+            List<Agent> agentsOnEdge = new ArrayList<>(selectedEdge.getAgents());
+
+            // Identifier les agents dont le chemin emprunte cette arête
+            List<Agent> allAgents = (engine != null) ? engine.getAgents() : agents;
+            List<Agent> agentsToReroute = new ArrayList<>();
+            for (Agent agent : allAgents) {
+                if (pathUsesEdge(agent, edgeSource, edgeTarget)) {
+                    agentsToReroute.add(agent);
+                }
             }
+
+            // Supprimer l'arête EN PREMIER pour que Dijkstra ne la réutilise pas
             edges.remove(selectedEdge);
             graph.removeEdge(selectedEdge.getId());
+
+            Pathfinder pf = new Pathfinder();
+
+            // Relocaliser les agents en transit → nœud source
+            for (Agent agent : agentsOnEdge) {
+                agent.arriveAt(edgeSource);
+                if (agent.getDestinationNode() != null) {
+                    List<Node> newPath = pf.dijkstraTime(edgeSource, agent.getDestinationNode(), graph);
+                    if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
+                    agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
+                }
+            }
+
+            // Recalculer le chemin des agents bloqués par la suppression
+            for (Agent agent : agentsToReroute) {
+                Node currentNode = agent.getCurrentNode();
+                if (currentNode != null && agent.getDestinationNode() != null) {
+                    List<Node> newPath = pf.dijkstraTime(currentNode, agent.getDestinationNode(), graph);
+                    if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
+                    agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
+                }
+            }
+
             selectedEdge = null;
             drawGraph();
             return;
@@ -350,25 +402,22 @@ public class GraphView {
         if (selectedNode == null) return;
 
         // KAN-13 : déplacer les agents du nœud supprimé vers un voisin
-        // On récupère les voisins AVANT de supprimer le nœud
+        // Récupérer les voisins AVANT de supprimer le nœud
         List<Node> neighbors = graph.getNeighbors(selectedNode);
         Pathfinder pf = new Pathfinder();
 
         for (Agent a : new ArrayList<>(agents)) {
             if (selectedNode.equals(a.getCurrentNode())) {
                 if (!neighbors.isEmpty()) {
-                    // Déplacer vers le premier voisin disponible
                     Node fallback = neighbors.get(0);
                     selectedNode.removeAgent(a);
                     a.arriveAt(fallback);
-                    // Recalculer le chemin depuis le nouveau nœud
                     if (a.getDestinationNode() != null) {
                         List<Node> newPath = pf.dijkstraTime(fallback, a.getDestinationNode(), graph);
                         if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
                         a.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
                     }
                 } else {
-                    // Aucun voisin → retirer l'agent proprement
                     if (engine != null) engine.removeAgent(a);
                     agents.remove(a);
                 }
@@ -384,7 +433,6 @@ public class GraphView {
 
     public void drawGraph() {
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-
         gc.save();
         gc.translate(offsetX, offsetY);
         gc.scale(zoom, zoom);
