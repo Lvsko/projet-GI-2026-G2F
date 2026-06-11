@@ -19,9 +19,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import javafx.scene.input.KeyCode;
 
 /**
  * Configuration form for manually adding nodes and edges to the graph.
@@ -33,9 +39,42 @@ public class ConfigView {
     private GraphView preview;
     private Canvas previewCanvas;
     private List<Agent> agents = new ArrayList<>();
+    private final ArrayDeque<Graph> undoStack = new ArrayDeque<>();
+    private final ArrayDeque<Graph> redoStack = new ArrayDeque<>();
 
     public ConfigView() {
         this.graph = new Graph();
+    }
+
+    private Graph deepCopy(Graph g) {
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            new ObjectOutputStream(bos).writeObject(g);
+            return (Graph) new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray())).readObject();
+        } catch (Exception e) {
+            return g;
+        }
+    }
+
+    private void saveState() {
+        undoStack.push(deepCopy(graph));
+        redoStack.clear();
+    }
+
+    private void undo() {
+        if (!undoStack.isEmpty()) {
+            redoStack.push(deepCopy(graph));
+            graph = undoStack.pop();
+            refreshPreview();
+        }
+    }
+
+    private void redo() {
+        if (!redoStack.isEmpty()) {
+            undoStack.push(deepCopy(graph));
+            graph = redoStack.pop();
+            refreshPreview();
+        }
     }
 
     private <T> void darkCombo(ComboBox<T> combo) {
@@ -68,6 +107,13 @@ public class ConfigView {
         form.setPadding(new Insets(15));
         form.setPrefWidth(420);
         form.setStyle("-fx-background-color: #424242;");
+
+        // UNDO / REDO
+        Button undoBtn = new Button("Undo"); undoBtn.setStyle(btnSecondary);
+        Button redoBtn = new Button("Redo"); redoBtn.setStyle(btnSecondary);
+        undoBtn.setOnAction(e -> undo());
+        redoBtn.setOnAction(e -> redo());
+        HBox undoRedoBox = new HBox(10, undoBtn, redoBtn);
 
         // ADD NODE
         Label nodeTitle = new Label("Add Node");
@@ -110,6 +156,8 @@ public class ConfigView {
                 NodeType type = nodeType.getValue();
                 if (id.isEmpty() || name.isEmpty()) { nodeStatus.setText("Error: ID and name are required."); return; }
                 if (graph.getNode(id) != null) { nodeStatus.setText("Error: Node ID already exists."); return; }
+
+                saveState(); //Loaded if undo is pressed
                 graph.addNode(new Node(id, name, x, y, capacity, NodeStatus.OPEN, type, 1.0f));
                 nodeStatus.setText("Node '" + name + "' added.");
                 nodeId.clear(); nodeName.clear(); nodeCapacity.clear(); nodeX.clear(); nodeY.clear();
@@ -158,6 +206,8 @@ public class ConfigView {
                 Node source = graph.getNode(sourceId);
                 Node target = graph.getNode(targetId);
                 if (source == null || target == null) { edgeStatus.setText("Error: source or target node not found."); return; }
+
+                saveState(); //Loaded if undo is pressed
                 graph.addEdge(new Edge(id, source, target, width, distance, 1.0f, directed));
                 edgeStatus.setText("Edge '" + id + "' added.");
                 edgeId.clear(); edgeSource.clear(); edgeTarget.clear(); edgeWidth.clear(); edgeDistance.clear();
@@ -288,6 +338,8 @@ public class ConfigView {
         });
 
         form.getChildren().addAll(
+                undoRedoBox,
+                new Separator(),
                 nodeTitle, nodeGrid, addNodeBtn, nodeStatus,
                 new Separator(),
                 edgeTitle, edgeGrid, addEdgeBtn, edgeStatus,
@@ -299,7 +351,7 @@ public class ConfigView {
                 launchBtn, retourBtn
         );
 
-        // --- PREVIEW (droite) ---
+        // --- PREVIEW (right) ---
         previewCanvas = new Canvas(600, 500);
         preview = new GraphView(previewCanvas, graph);
 
@@ -319,6 +371,11 @@ public class ConfigView {
         Scene scene = new Scene(mainLayout, 1060, 720);
         stage.setScene(scene);
         stage.show();
+
+        scene.setOnKeyPressed(e -> {
+            if (e.isControlDown() && e.getCode() == KeyCode.Z) undo();
+            if (e.isControlDown() && e.getCode() == KeyCode.Y) redo();
+        });
 
         preview.drawGraph();
     }
