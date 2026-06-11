@@ -27,10 +27,14 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 import javafx.scene.input.KeyCode;
 
 /**
- * Configuration form for manually adding nodes and edges to the graph.
+ * JavaFX view for manually configuring a building graph before launching the simulation.
+ * Allows adding nodes, edges and agents, saving/loading plans, generating random graphs,
+ * and undoing/redoing changes via Ctrl+Z / Ctrl+Y.
  * @author Ruben
  */
 public class ConfigView {
@@ -46,6 +50,12 @@ public class ConfigView {
         this.graph = new Graph();
     }
 
+    /**
+     * Creates a deep copy of the given graph via serialization.
+     * Used to snapshot graph state for undo/redo.
+     * @param g the graph to copy
+     * @return a fully independent copy of {@code g}, or {@code g} itself if serialization fails
+     */
     private Graph deepCopy(Graph g) {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -56,11 +66,59 @@ public class ConfigView {
         }
     }
 
+    /**
+     * Generates {@code n} random nodes and connects them into a random spanning tree,
+     * guaranteeing graph connectivity. Node types alternate between ROOM and CORRIDOR,
+     * with the last node always being an EXIT. Saves state for undo before modifying the graph.
+     * @param n the number of nodes to generate 
+     */
+    private void generateRandom(int n) {
+        saveState();
+        Random rand = new Random();
+        List<Node> newNodes = new ArrayList<>();
+
+        for (int i = 0; i < n; i++) {
+            String id = "RN" + (graph.getNodes().size() + i);
+            double x = 50 + rand.nextDouble() * 500;
+            double y = 50 + rand.nextDouble() * 400;
+
+            
+            NodeType type;
+            if (i == n - 1) {
+                type = NodeType.EXIT;
+            }
+            else if (i % 2 == 0){
+                type = NodeType.ROOM;
+            }
+            else {
+                type = NodeType.CORRIDOR;
+            }
+
+            Node node = new Node(id, id, x, y, 10, NodeStatus.OPEN, type, 1.0f);
+            newNodes.add(node);
+            graph.addNode(node);
+        }
+
+        //Chains all nodes to guarantee connexity and add random connexions between nodes 
+        for (int i = 1; i < newNodes.size(); i++) {
+            String edgeId = "RE" + (graph.getEdges().size());
+            Node target = newNodes.get(i);
+            Node source = newNodes.get(rand.nextInt(i)); // rand within previous nodes
+            graph.addEdge(new Edge(edgeId, source, target, 5, 1.0f, 1.0f, false));
+        }
+
+
+
+        refreshPreview();
+    }
+
+    /** Saves the current graph state onto the undo stack and clears the redo stack. */
     private void saveState() {
         undoStack.push(deepCopy(graph));
         redoStack.clear();
     }
 
+    /** Restores the previous graph state from the undo stack and updates the preview. */
     private void undo() {
         if (!undoStack.isEmpty()) {
             redoStack.push(deepCopy(graph));
@@ -69,6 +127,7 @@ public class ConfigView {
         }
     }
 
+    /** Reapplies the last undone graph state from the redo stack and updates the preview. */
     private void redo() {
         if (!redoStack.isEmpty()) {
             undoStack.push(deepCopy(graph));
@@ -77,6 +136,11 @@ public class ConfigView {
         }
     }
 
+    /**
+     * Applies dark theme styling to a ComboBox, including the selected item cell.
+     * @param <T> the type of items in the combo box
+     * @param combo the ComboBox to style
+     */
     private <T> void darkCombo(ComboBox<T> combo) {
         combo.setStyle("-fx-background-color: #303030; -fx-border-color: #616161; -fx-border-radius: 4;");
         combo.setButtonCell(new ListCell<T>() {
@@ -93,6 +157,13 @@ public class ConfigView {
         });
     }
 
+    /**
+     * Builds and displays the configuration window.
+     * The window contains sections for adding nodes, edges, agents,
+     * saving/loading plans, random generation, and undo/redo controls.
+     * Ctrl+Z and Ctrl+Y are bound to undo and redo respectively.
+     * @param stage the JavaFX stage to display the view on
+     */
     public void start(Stage stage) {
         stage.setTitle("Configure Graph");
 
@@ -320,6 +391,25 @@ public class ConfigView {
         });
         HBox saveLoadButtons = new HBox(10, saveBtn, loadBtn);
 
+        // RANDOM GENERATION
+        Button randomBtn = new Button("Random Generation"); randomBtn.setStyle(btnSecondary);
+        randomBtn.setOnAction(e -> {
+            TextInputDialog dialog = new TextInputDialog("5");
+            dialog.setTitle("Random Generation");
+            dialog.setHeaderText("Generate random nodes and edges");
+            dialog.setContentText("Number of nodes:");
+            Optional<String> result = dialog.showAndWait();
+            result.ifPresent(val -> {
+                try {
+                    int n = Integer.parseInt(val.trim());
+                    if (n <= 0) return;
+                    generateRandom(n);
+                } catch (NumberFormatException ex) {
+                    // entrée invalide, on ignore
+                }
+            });
+        });
+
         // LAUNCH
         Button launchBtn = new Button("▶ Lancer la simulation");
         launchBtn.setStyle(btnPrimary + "-fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 13;");
@@ -348,10 +438,12 @@ public class ConfigView {
                 new Separator(),
                 saveLoadTitle, saveLoadButtons, saveLoadStatus,
                 new Separator(),
+                randomBtn,
+                new Separator(),
                 launchBtn, retourBtn
         );
 
-        // --- PREVIEW (right) ---
+        // --- PREVIEW ---
         previewCanvas = new Canvas(600, 500);
         preview = new GraphView(previewCanvas, graph);
 
@@ -380,10 +472,15 @@ public class ConfigView {
         preview.drawGraph();
     }
 
+    /** Redraws the graph preview canvas with the current graph state. */
     private void refreshPreview() {
         preview = new GraphView(previewCanvas, graph);
         preview.drawGraph();
     }
 
+    /**
+     * Returns the graph configured by the user.
+     * @return the current graph
+     */
     public Graph getGraph() { return graph; }
 }
