@@ -16,7 +16,7 @@ import model.Graph;
  * 
  * @author Ruben
  */
-public class Statistics {
+public class Statistics implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	private int evacuatedCount;
