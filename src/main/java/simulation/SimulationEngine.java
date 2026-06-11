@@ -70,7 +70,7 @@ public class SimulationEngine {
 
     /** Advances the simulation by one tick */
     public void step() {
-        if (!running) return;
+        
         currentTick++;
 
         // Remove agents that waited 1 tick at EXIT
