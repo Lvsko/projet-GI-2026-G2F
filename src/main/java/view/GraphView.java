@@ -6,6 +6,7 @@ import model.Edge;
 import model.agent.Agent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Alert;
 import javafx.scene.paint.Color;
 import model.agent.AgentState;
 import model.node.NodeStatus;
@@ -75,42 +76,49 @@ public class GraphView {
                         Stage popup = new Stage();
                         popup.initModality(Modality.APPLICATION_MODAL);
                         popup.setTitle("Nouvelle arête");
-                        TextField widthField = new TextField("5");
+                        TextField widthField    = new TextField("5");
                         TextField distanceField = new TextField("1.0");
-                        TextField speedField = new TextField("1.0");
+                        TextField speedField    = new TextField("1.0");
                         ComboBox<Boolean> directedBox = new ComboBox<>();
                         directedBox.getItems().addAll(false, true);
                         directedBox.setValue(false);
+                        Label errorLabel = new Label();
+                        errorLabel.setStyle("-fx-text-fill: #ff6b6b;");
                         Button createButton = new Button("Créer");
                         createButton.setOnAction(e -> {
-                            Edge newEdge = new Edge(
-                                edgeId, connectSource, node,
-                                Integer.parseInt(widthField.getText()),
-                                Float.parseFloat(distanceField.getText()),
-                                Float.parseFloat(speedField.getText()),
-                                directedBox.getValue()
-                            );
-                            edges.add(newEdge);
-                            graph.addEdge(newEdge);
-                            connectMode = false;
-                            connectSource = null;
-                            drawGraph();
-                            popup.close();
+                            try {
+                                int w      = Integer.parseInt(widthField.getText().trim());
+                                float dist = Float.parseFloat(distanceField.getText().trim());
+                                float spd  = Float.parseFloat(speedField.getText().trim());
+                                // Validations #6 #8
+                                if (w <= 0)    { errorLabel.setText("La largeur doit être > 0.");  return; }
+                                if (dist <= 0) { errorLabel.setText("La distance doit être > 0."); return; }
+                                if (spd <= 0)  { errorLabel.setText("La vitesse doit être > 0.");  return; }
+                                Edge newEdge = new Edge(edgeId, connectSource, node, w, dist, spd, directedBox.getValue());
+                                edges.add(newEdge);
+                                graph.addEdge(newEdge);
+                                connectMode  = false;
+                                connectSource = null;
+                                drawGraph();
+                                popup.close();
+                            } catch (NumberFormatException ex) {
+                                errorLabel.setText("Valeurs invalides — entrez des nombres."); // #7
+                            }
                         });
                         VBox layout = new VBox(10,
-                            new Label("Largeur"), widthField,
-                            new Label("Distance"), distanceField,
+                            new Label("Largeur"),      widthField,
+                            new Label("Distance"),     distanceField,
                             new Label("Speed Modifier"), speedField,
-                            new Label("Directed"), directedBox,
-                            createButton
+                            new Label("Directed"),     directedBox,
+                            createButton, errorLabel
                         );
                         layout.setStyle("-fx-padding: 10;");
-                        popup.setScene(new Scene(layout, 300, 300));
+                        popup.setScene(new Scene(layout, 300, 320));
                         popup.showAndWait();
                         return;
                     }
                 }
-                connectMode = false;
+                connectMode   = false;
                 connectSource = null;
                 drawGraph();
                 return;
@@ -126,8 +134,8 @@ public class GraphView {
                     double ay = node.getY() + 35;
                     if (mouseX >= ax && mouseX <= ax + 15 && mouseY >= ay && mouseY <= ay + 15) {
                         selectedAgent = agent;
-                        selectedNode = null;
-                        selectedEdge = null;
+                        selectedNode  = null;
+                        selectedEdge  = null;
                         drawGraph();
                         return;
                     }
@@ -136,8 +144,8 @@ public class GraphView {
 
             for (Node node : nodes) {
                 if (hitNode(node, mouseX, mouseY)) {
-                    selectedNode = node;
-                    selectedEdge = null;
+                    selectedNode  = node;
+                    selectedEdge  = null;
                     selectedAgent = null;
                     drawGraph();
                     return;
@@ -146,22 +154,24 @@ public class GraphView {
 
             for (Edge edge : edges) {
                 if (hitEdge(edge, mouseX, mouseY)) {
-                    selectedEdge = edge;
-                    selectedNode = null;
+                    selectedEdge  = edge;
+                    selectedNode  = null;
                     selectedAgent = null;
                     drawGraph();
                     return;
                 }
             }
 
-            selectedNode = null;
-            selectedEdge = null;
+            selectedNode  = null;
+            selectedEdge  = null;
             selectedAgent = null;
             drawGraph();
         });
 
+        // Zoom avec clamp pour éviter zoom nul ou négatif (bonus robustesse)
         canvas.setOnScroll(event -> {
             zoom = event.getDeltaY() > 0 ? zoom * 1.1 : zoom / 1.1;
+            zoom = Math.max(0.1, Math.min(zoom, 8.0));
             drawGraph();
         });
 
@@ -172,8 +182,8 @@ public class GraphView {
             double wy = toWorldY(event.getY());
             for (Node node : nodes) {
                 if (hitNode(node, wx, wy)) {
-                    draggedNode = node;
-                    draggingNode = true;
+                    draggedNode   = node;
+                    draggingNode  = true;
                     return;
                 }
             }
@@ -197,8 +207,8 @@ public class GraphView {
 
         canvas.setOnMouseReleased(event -> {
             draggingCanvas = false;
-            draggingNode = false;
-            draggedNode = null;
+            draggingNode   = false;
+            draggedNode    = null;
         });
     }
 
@@ -211,13 +221,13 @@ public class GraphView {
     }
 
     private boolean hitEdge(Edge edge, double mx, double my) {
-        double x1 = edge.getSource().getX() + 60;
-        double y1 = edge.getSource().getY() + 30;
-        double x2 = edge.getTarget().getX() + 60;
-        double y2 = edge.getTarget().getY() + 30;
+        double x1   = edge.getSource().getX() + 60;
+        double y1   = edge.getSource().getY() + 30;
+        double x2   = edge.getTarget().getX() + 60;
+        double y2   = edge.getTarget().getY() + 30;
         double len2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
         if (len2 == 0) return false;
-        double t = Math.max(0, Math.min(1, ((mx - x1) * (x2 - x1) + (my - y1) * (y2 - y1)) / len2));
+        double t  = Math.max(0, Math.min(1, ((mx - x1) * (x2 - x1) + (my - y1) * (y2 - y1)) / len2));
         double px = x1 + t * (x2 - x1);
         double py = y1 + t * (y2 - y1);
         return Math.sqrt((mx - px) * (mx - px) + (my - py) * (my - py)) < 8;
@@ -240,15 +250,12 @@ public class GraphView {
         Stage popup = new Stage();
         popup.initModality(Modality.APPLICATION_MODAL);
         popup.setTitle("Nouvel Agent");
-        ComboBox<AgentState> stateBox = new ComboBox<>();
-        stateBox.getItems().addAll(AgentState.values());
-        stateBox.setValue(AgentState.CALM);
+        ComboBox<AgentState>    stateBox    = new ComboBox<>();
         ComboBox<AgentBehavior> behaviorBox = new ComboBox<>();
-        behaviorBox.getItems().addAll(AgentBehavior.values());
-        behaviorBox.setValue(AgentBehavior.COOPERATIVE);
-        ComboBox<AgentType> typeBox = new ComboBox<>();
-        typeBox.getItems().addAll(AgentType.values());
-        typeBox.setValue(AgentType.ADULT);
+        ComboBox<AgentType>     typeBox     = new ComboBox<>();
+        stateBox.getItems().addAll(AgentState.values());    stateBox.setValue(AgentState.CALM);
+        behaviorBox.getItems().addAll(AgentBehavior.values()); behaviorBox.setValue(AgentBehavior.COOPERATIVE);
+        typeBox.getItems().addAll(AgentType.values());      typeBox.setValue(AgentType.ADULT);
         Button createButton = new Button("Créer");
         createButton.setOnAction(e -> {
             Agent agent = new Agent(
@@ -262,9 +269,9 @@ public class GraphView {
             popup.close();
         });
         VBox layout = new VBox(10,
-            new Label("État"), stateBox,
+            new Label("État"),         stateBox,
             new Label("Comportement"), behaviorBox,
-            new Label("Type"), typeBox,
+            new Label("Type"),         typeBox,
             createButton
         );
         layout.setStyle("-fx-padding: 10;");
@@ -276,65 +283,70 @@ public class GraphView {
         String id = "N" + (nodeCounter + 1);
         Stage popup = new Stage();
         popup.initModality(Modality.APPLICATION_MODAL);
-        popup.setTitle("Nouveau noeud");
-        TextField nameField = new TextField("Room " + (nodeCounter + 1));
-        ComboBox<NodeType> typeBox = new ComboBox<>();
-        typeBox.getItems().addAll(NodeType.values());
-        typeBox.setValue(NodeType.ROOM);
-        ComboBox<NodeStatus> statusBox = new ComboBox<>();
-        statusBox.getItems().addAll(NodeStatus.values());
-        statusBox.setValue(NodeStatus.OPEN);
-        TextField capacityField = new TextField("10");
+        popup.setTitle("Nouveau nœud");
+        TextField nameField         = new TextField("Room " + (nodeCounter + 1));
+        TextField capacityField     = new TextField("10");
         TextField attractivenessField = new TextField("1.0");
+        ComboBox<NodeType>   typeBox   = new ComboBox<>();
+        ComboBox<NodeStatus> statusBox = new ComboBox<>();
+        typeBox.getItems().addAll(NodeType.values());     typeBox.setValue(NodeType.ROOM);
+        statusBox.getItems().addAll(NodeStatus.values()); statusBox.setValue(NodeStatus.OPEN);
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: #ff6b6b;");
         Button createButton = new Button("Créer");
         createButton.setOnAction(e -> {
-            Node newNode = new Node(
-                id, nameField.getText(), lastClickX - 60, lastClickY - 30,
-                Integer.parseInt(capacityField.getText()),
-                statusBox.getValue(), typeBox.getValue(),
-                Float.parseFloat(attractivenessField.getText())
-            );
-            nodes.add(newNode);
-            graph.addNode(newNode);
-            nodeCounter++;
-            drawGraph();
-            popup.close();
+            try {
+                int    capacity      = Integer.parseInt(capacityField.getText().trim());
+                float  attractiveness = Float.parseFloat(attractivenessField.getText().trim());
+                String name          = nameField.getText().trim();
+                if (name.isEmpty())    { errorLabel.setText("Le nom est requis.");           return; }
+                if (capacity <= 0)     { errorLabel.setText("La capacité doit être > 0.");   return; } // #11
+                if (attractiveness <= 0) { errorLabel.setText("L'attractivité doit être > 0."); return; }
+                Node newNode = new Node(
+                    id, name, lastClickX - 60, lastClickY - 30,
+                    capacity, statusBox.getValue(), typeBox.getValue(), attractiveness
+                );
+                nodes.add(newNode);
+                graph.addNode(newNode);
+                nodeCounter++;
+                drawGraph();
+                popup.close();
+            } catch (NumberFormatException ex) {
+                errorLabel.setText("Valeurs invalides — entrez des nombres."); // #7
+            }
         });
         VBox layout = new VBox(10,
-            new Label("Nom"), nameField,
-            new Label("Type"), typeBox,
-            new Label("Statut"), statusBox,
-            new Label("Capacité"), capacityField,
+            new Label("Nom"),         nameField,
+            new Label("Type"),        typeBox,
+            new Label("Statut"),      statusBox,
+            new Label("Capacité"),    capacityField,
             new Label("Attractivité"), attractivenessField,
-            createButton
+            createButton, errorLabel
         );
         layout.setStyle("-fx-padding: 10;");
-        popup.setScene(new Scene(layout, 300, 350));
+        popup.setScene(new Scene(layout, 300, 370));
         popup.showAndWait();
     }
 
     public void startAddEdge() {
         if (selectedNode == null) return;
-        connectMode = true;
+        connectMode   = true;
         connectSource = selectedNode;
         drawGraph();
     }
 
     /**
      * Vérifie si le chemin courant d'un agent emprunte l'arête src→tgt (ou tgt→src).
-     * Prend en compte la transition depuis le nœud courant vers le premier nœud du chemin.
      */
     private boolean pathUsesEdge(Agent agent, Node src, Node tgt) {
         List<Node> path = agent.getCurrentPath();
         if (path == null || path.isEmpty()) return false;
-        // Transition depuis le nœud courant vers le premier nœud du chemin
         Node current = agent.getCurrentNode();
         if (current != null) {
             Node next = path.get(0);
             if ((current.equals(src) && next.equals(tgt)) ||
                 (current.equals(tgt) && next.equals(src))) return true;
         }
-        // Transitions internes au chemin
         for (int i = 0; i < path.size() - 1; i++) {
             if ((path.get(i).equals(src) && path.get(i + 1).equals(tgt)) ||
                 (path.get(i).equals(tgt) && path.get(i + 1).equals(src))) return true;
@@ -356,25 +368,20 @@ public class GraphView {
             Node edgeSource = selectedEdge.getSource();
             Node edgeTarget = selectedEdge.getTarget();
 
-            // Sauvegarder les agents en transit sur l'arête
             List<Agent> agentsOnEdge = new ArrayList<>(selectedEdge.getAgents());
 
-            // Identifier les agents dont le chemin emprunte cette arête
             List<Agent> allAgents = (engine != null) ? engine.getAgents() : agents;
             List<Agent> agentsToReroute = new ArrayList<>();
             for (Agent agent : allAgents) {
-                if (pathUsesEdge(agent, edgeSource, edgeTarget)) {
-                    agentsToReroute.add(agent);
-                }
+                if (pathUsesEdge(agent, edgeSource, edgeTarget)) agentsToReroute.add(agent);
             }
 
-            // Supprimer l'arête EN PREMIER pour que Dijkstra ne la réutilise pas
+            // Supprimer EN PREMIER pour que Dijkstra ne réutilise pas l'arête supprimée
             edges.remove(selectedEdge);
             graph.removeEdge(selectedEdge.getId());
 
             Pathfinder pf = new Pathfinder();
 
-            // Relocaliser les agents en transit → nœud source
             for (Agent agent : agentsOnEdge) {
                 agent.arriveAt(edgeSource);
                 if (agent.getDestinationNode() != null) {
@@ -384,7 +391,6 @@ public class GraphView {
                 }
             }
 
-            // Recalculer le chemin des agents bloqués par la suppression
             for (Agent agent : agentsToReroute) {
                 Node currentNode = agent.getCurrentNode();
                 if (currentNode != null && agent.getDestinationNode() != null) {
@@ -401,8 +407,7 @@ public class GraphView {
 
         if (selectedNode == null) return;
 
-        // KAN-13 : déplacer les agents du nœud supprimé vers un voisin
-        // Récupérer les voisins AVANT de supprimer le nœud
+        // KAN-13 : déplacer les agents vers un voisin avant suppression
         List<Node> neighbors = graph.getNeighbors(selectedNode);
         Pathfinder pf = new Pathfinder();
 
@@ -445,13 +450,13 @@ public class GraphView {
         // Draw edges
         for (Edge edge : edges) {
             if (edge == selectedEdge) {
-                gc.setStroke(Color.BLUE); gc.setLineWidth(3);
+                gc.setStroke(Color.BLUE);   gc.setLineWidth(3);
             } else if (edge.getOccupancy() >= edge.getWidth()) {
-                gc.setStroke(Color.RED); gc.setLineWidth(2);
+                gc.setStroke(Color.RED);    gc.setLineWidth(2);
             } else if (edge.getOccupancy() > 0) {
                 gc.setStroke(Color.ORANGE); gc.setLineWidth(2);
             } else {
-                gc.setStroke(Color.BLACK); gc.setLineWidth(2);
+                gc.setStroke(Color.BLACK);  gc.setLineWidth(2);
             }
             double x1 = edge.getSource().getX() + 60;
             double y1 = edge.getSource().getY() + 30;
@@ -461,10 +466,10 @@ public class GraphView {
             gc.setFill(Color.DARKGRAY);
             gc.fillText("w=" + edge.getWidth(), (x1 + x2) / 2 + 4, (y1 + y2) / 2 - 4);
             if (edge.isDirected()) {
-                double angle = Math.atan2(y2 - y1, x2 - x1);
+                double angle       = Math.atan2(y2 - y1, x2 - x1);
                 double arrowLength = 15;
-                double arrowX = x2 - 30 * Math.cos(angle);
-                double arrowY = y2 - 30 * Math.sin(angle);
+                double arrowX      = x2 - 30 * Math.cos(angle);
+                double arrowY      = y2 - 30 * Math.sin(angle);
                 gc.setStroke(edge == selectedEdge ? Color.BLUE : Color.BLACK);
                 gc.strokeLine(arrowX, arrowY, arrowX - arrowLength * Math.cos(angle - Math.PI / 6), arrowY - arrowLength * Math.sin(angle - Math.PI / 6));
                 gc.strokeLine(arrowX, arrowY, arrowX - arrowLength * Math.cos(angle + Math.PI / 6), arrowY - arrowLength * Math.sin(angle + Math.PI / 6));
@@ -506,16 +511,10 @@ public class GraphView {
             if (start != null) {
                 Node previous = start;
                 for (Node next : selectedAgent.getCurrentPath()) {
-                    double x1 = previous.getX() + 60;
-                    double y1 = previous.getY() + 30;
-                    double x2 = next.getX() + 60;
-                    double y2 = next.getY() + 30;
-                    gc.setStroke(Color.WHITE);
-                    gc.setLineWidth(5);
-                    gc.strokeLine(x1, y1, x2, y2);
-                    gc.setStroke(agentColor(selectedAgent));
-                    gc.setLineWidth(3);
-                    gc.strokeLine(x1, y1, x2, y2);
+                    double x1 = previous.getX() + 60, y1 = previous.getY() + 30;
+                    double x2 = next.getX()     + 60, y2 = next.getY()     + 30;
+                    gc.setStroke(Color.WHITE);             gc.setLineWidth(5); gc.strokeLine(x1, y1, x2, y2);
+                    gc.setStroke(agentColor(selectedAgent)); gc.setLineWidth(3); gc.strokeLine(x1, y1, x2, y2);
                     previous = next;
                 }
             }
@@ -530,9 +529,9 @@ public class GraphView {
             if (node != null) agentsByNode.computeIfAbsent(node, k -> new ArrayList<>()).add(agent);
         }
         for (java.util.Map.Entry<Node, List<Agent>> entry : agentsByNode.entrySet()) {
-            Node node = entry.getKey();
+            Node node       = entry.getKey();
             List<Agent> nodeAgents = entry.getValue();
-            int count = nodeAgents.size();
+            int  count      = nodeAgents.size();
             if (count <= 4) {
                 for (int i = 0; i < count; i++) {
                     Agent agent = nodeAgents.get(i);
@@ -541,19 +540,17 @@ public class GraphView {
                     double ay = node.getY() + 38;
                     gc.fillOval(ax, ay, 15, 15);
                     if (agent == selectedAgent) {
-                        gc.setStroke(Color.BLUE);
-                        gc.setLineWidth(2);
+                        gc.setStroke(Color.BLUE); gc.setLineWidth(2);
                         gc.strokeOval(ax, ay, 15, 15);
                     }
                 }
             } else {
                 long panicked = nodeAgents.stream().filter(a -> a.getState() == AgentState.PANICKED).count();
                 long injured  = nodeAgents.stream().filter(a -> a.getState() == AgentState.INJURED).count();
-                if (panicked > count / 2) gc.setFill(Color.RED);
-                else if (injured > count / 2) gc.setFill(Color.YELLOW);
-                else gc.setFill(Color.GREEN);
-                double cx = node.getX() + 60;
-                double cy = node.getY() + 42;
+                if      (panicked > count / 2) gc.setFill(Color.RED);
+                else if (injured  > count / 2) gc.setFill(Color.YELLOW);
+                else                           gc.setFill(Color.GREEN);
+                double cx = node.getX() + 60, cy = node.getY() + 42;
                 gc.fillOval(cx - 18, cy - 18, 36, 36);
                 gc.setFill(Color.BLACK);
                 gc.fillText("x" + count, cx - 8, cy + 5);
@@ -565,9 +562,7 @@ public class GraphView {
             for (Agent agent : engine.getExitingAgents()) {
                 Node node = agent.getCurrentNode();
                 if (node != null) {
-                    gc.setFill(Color.WHITE);
-                    gc.setStroke(Color.DARKGREEN);
-                    gc.setLineWidth(1.5);
+                    gc.setFill(Color.WHITE); gc.setStroke(Color.DARKGREEN); gc.setLineWidth(1.5);
                     int index = node.getAgents().size();
                     double ax = node.getX() + 10 + (index % 5) * 22;
                     double ay = node.getY() + 38 + (index / 5) * 20;
@@ -592,27 +587,28 @@ public class GraphView {
         if (selectedAgent != null) {
             gc.setFill(Color.BLACK);
             gc.fillText("— Agent sélectionné —", px, py);
-            gc.fillText("ID : " + selectedAgent.getId(), px, py + 20);
-            gc.fillText("État : " + selectedAgent.getState(), px, py + 40);
-            gc.fillText("Type : " + selectedAgent.getType(), px, py + 60);
-            gc.fillText("Nœud : " + (selectedAgent.getCurrentNode() != null ? selectedAgent.getCurrentNode().getName() : "transit"), px, py + 80);
+            gc.fillText("ID : "    + selectedAgent.getId(),    px, py + 20);
+            gc.fillText("État : "  + selectedAgent.getState(), px, py + 40);
+            gc.fillText("Type : "  + selectedAgent.getType(),  px, py + 60);
+            gc.fillText("Nœud : "  + (selectedAgent.getCurrentNode() != null
+                ? selectedAgent.getCurrentNode().getName() : "transit"), px, py + 80);
         } else if (selectedEdge != null) {
             gc.setFill(Color.BLACK);
-            gc.fillText("— Arête sélectionnée —", px, py);
-            gc.fillText("ID : " + selectedEdge.getId(), px, py + 20);
-            gc.fillText("Source : " + selectedEdge.getSource().getName(), px, py + 40);
-            gc.fillText("Cible : " + selectedEdge.getTarget().getName(), px, py + 60);
-            gc.fillText("Largeur : " + selectedEdge.getWidth(), px, py + 80);
+            gc.fillText("— Arête sélectionnée —",                    px, py);
+            gc.fillText("ID : "        + selectedEdge.getId(),        px, py + 20);
+            gc.fillText("Source : "    + selectedEdge.getSource().getName(), px, py + 40);
+            gc.fillText("Cible : "     + selectedEdge.getTarget().getName(), px, py + 60);
+            gc.fillText("Largeur : "   + selectedEdge.getWidth(),     px, py + 80);
             gc.fillText("Occupancy : " + selectedEdge.getOccupancy(), px, py + 100);
         } else if (selectedNode != null) {
             gc.setFill(Color.BLACK);
-            gc.fillText("— Nœud sélectionné —", px, py);
-            gc.fillText("ID : " + selectedNode.getId(), px, py + 20);
-            gc.fillText("Type : " + selectedNode.getType(), px, py + 40);
+            gc.fillText("— Nœud sélectionné —",                      px, py);
+            gc.fillText("ID : "       + selectedNode.getId(),         px, py + 20);
+            gc.fillText("Type : "     + selectedNode.getType(),       px, py + 40);
             gc.fillText("Capacité : " + selectedNode.getMaxCapacity(), px, py + 60);
-            gc.fillText("Agents : " + selectedNode.getOccupancy(), px, py + 80);
-            gc.fillText("(Cliquez 'Add Edge'", px, py + 100);
-            gc.fillText(" pour connecter)", px, py + 115);
+            gc.fillText("Agents : "   + selectedNode.getOccupancy(),  px, py + 80);
+            gc.fillText("(Cliquez 'Add Edge'",  px, py + 100);
+            gc.fillText(" pour connecter)",     px, py + 115);
         }
     }
 
@@ -626,6 +622,6 @@ public class GraphView {
     }
 
     public void removeAgent(Agent agent) { agents.remove(agent); }
-    public Graph getGraph() { return graph; }
-    public List<Agent> getAgents() { return agents; }
+    public Graph getGraph()              { return graph; }
+    public List<Agent> getAgents()       { return agents; }
 }
