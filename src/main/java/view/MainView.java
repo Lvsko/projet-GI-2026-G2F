@@ -30,20 +30,39 @@ public class MainView extends Application {
     private List<Agent> agents;
     private String source;
 
+    /** Default constructor */
     public MainView() {}
 
+    /**
+     * Creates a simulation view initialized with a graph and a list of agents.
+     *
+     * @param graph the graph to simulate
+     * @param agents initial agents in the simulation 
+     */
     public MainView(Graph graph, List<Agent> agents) {
         this.graph = graph;
         this.agents = agents;
         this.source = "demo";
     }
 
+    /**
+     * Creates a simulation view with a source identifier.
+     * @param graph the graph to simulate
+     * @param agents initial agents
+     * @param source indicates where the simulation was launched from (e.g., "demo")
+     */
     public MainView(Graph graph, List<Agent> agents, String source) {
         this.graph = graph;
         this.agents = agents;
         this.source = source;
     }
 
+    /**
+     * Creates a styled JavaFX button with predefined CSS properties.
+     * @param text the button label
+     * @param bg the background color in CSS format
+     * @return a styled Button instance
+     */
     private Button styledButton(String text, String bg) {
         Button btn = new Button(text);
         btn.setFont(Font.font("Arial", 12));
@@ -57,6 +76,12 @@ public class MainView extends Application {
         return btn;
     }
 
+    /**
+     * Initializes and launches the main simulation interface.
+     * Sets up the canvas, simulation engine, controls, statistics panel,
+     * and animation loop for real-time simulation updates.
+     * @param stage the primary JavaFX stage
+     */
     @Override
     public void start(Stage stage) {
         Canvas canvas = new Canvas(700, 560);
@@ -268,6 +293,10 @@ public class MainView extends Application {
         stage.show();
     }
 
+    /**
+     * Launches the JavaFX application
+     * @param args command-line arguments (not used)
+     */
     public static void main(String[] args) {
         launch();
     }
