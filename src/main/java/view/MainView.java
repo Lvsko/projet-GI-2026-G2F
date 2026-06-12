@@ -212,7 +212,7 @@ public class MainView extends Application {
         spawnButton.setOnAction(e   -> renderer.spawnAgentAtRoom());
         addNodeButton.setOnAction(e -> renderer.addRoomNode());
         addEdgeButton.setOnAction(e -> renderer.startAddEdge());
-        removeButton.setOnAction(e  -> renderer.removeSelectedNode());
+        removeButton.setOnAction(e  -> renderer.removeSelected());
 
         // Reuse the same stage to avoid window size jump on navigation (KAN-39)
         retourButton.setOnAction(e -> {
