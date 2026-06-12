@@ -441,10 +441,10 @@ public class GraphView {
      * Agents whose path used a deleted edge are rerouted via Dijkstra.
      * Fires the {@code onSelectionChanged} callback after each removal.
      */
-    public void removeSelectedNode() {
+    public void removeSelected() {
         if (selectedAgent != null) {
+            controller.removeAgent(selectedAgent);
             agents.remove(selectedAgent);
-            if (engine != null) engine.removeAgent(selectedAgent);
             selectedAgent = null;
             drawGraph();
             if (onSelectionChanged != null) onSelectionChanged.run();
