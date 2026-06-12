@@ -415,7 +415,7 @@ public class ConfigView {
 
         // ── Preview canvas ───────────────────────────────────────────────────────
         previewCanvas = new Canvas(600, 500);
-        preview       = new GraphView(previewCanvas, graph);
+        preview = new GraphView(previewCanvas, graph, controller);
 
         VBox previewBox = new VBox(8);
         previewBox.setPadding(new Insets(15));
@@ -449,7 +449,7 @@ public class ConfigView {
      * Recreates the GraphView and redraws the graph preview after any structural change.
      */
     private void refreshPreview() {
-        preview = new GraphView(previewCanvas, graph);
+        preview = new GraphView(previewCanvas, graph, controller);
         preview.drawGraph();
     }
 
