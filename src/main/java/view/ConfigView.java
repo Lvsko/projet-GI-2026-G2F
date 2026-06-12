@@ -1,5 +1,6 @@
 package view;
 
+import controller.SimulationController;
 import model.Graph;
 import model.node.Node;
 import model.Edge;
@@ -9,27 +10,32 @@ import model.agent.AgentState;
 import model.agent.AgentType;
 import model.node.NodeStatus;
 import model.node.NodeType;
-import simulation.SimulationState;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
-import javafx.scene.input.KeyCode;
 
 /**
  * JavaFX view for manually configuring a building graph before launching the simulation.
@@ -38,7 +44,6 @@ import javafx.scene.input.KeyCode;
  * @author Ruben
  */
 public class ConfigView {
-
     private Graph graph;
     private GraphView preview;
     private Canvas previewCanvas;
@@ -52,9 +57,8 @@ public class ConfigView {
 
     /**
      * Creates a deep copy of the given graph via serialization.
-     * Used to snapshot graph state for undo/redo.
-     * @param g the graph to copy
-     * @return a fully independent copy of {@code g}, or {@code g} itself if serialization fails
+     * @param g he graph to duplicate
+     * @return a deep copy of the graph, or the original graph if copying fails
      */
     private Graph deepCopy(Graph g) {
         try {
@@ -66,80 +70,43 @@ public class ConfigView {
         }
     }
 
+    
     /**
-     * Generates {@code n} random nodes and connects them into a random spanning tree,
-     * guaranteeing graph connectivity. Node types alternate between ROOM and CORRIDOR,
-     * with the last node always being an EXIT. Saves state for undo before modifying the graph.
-     * @param n the number of nodes to generate 
+     * Saves the current state of the graph into the undo stack.
      */
-    private void generateRandom(int n) {
-        saveState();
-        Random rand = new Random();
-        List<Node> newNodes = new ArrayList<>();
-
-        for (int i = 0; i < n; i++) {
-            String id = "RN" + (graph.getNodes().size() + i);
-            double x = 50 + rand.nextDouble() * 500;
-            double y = 50 + rand.nextDouble() * 400;
-
-            
-            NodeType type;
-            if (i == n - 1) {
-                type = NodeType.EXIT;
-            }
-            else if (i % 2 == 0){
-                type = NodeType.ROOM;
-            }
-            else {
-                type = NodeType.CORRIDOR;
-            }
-
-            Node node = new Node(id, id, x, y, 10, NodeStatus.OPEN, type, 1.0f);
-            newNodes.add(node);
-            graph.addNode(node);
-        }
-
-        //Chains all nodes to guarantee connexity and add random connexions between nodes 
-        for (int i = 1; i < newNodes.size(); i++) {
-            String edgeId = "RE" + (graph.getEdges().size());
-            Node target = newNodes.get(i);
-            Node source = newNodes.get(rand.nextInt(i)); // rand within previous nodes
-            graph.addEdge(new Edge(edgeId, source, target, 5, 1.0f, 1.0f, false));
-        }
-
-
-
-        refreshPreview();
-    }
-
-    /** Saves the current graph state onto the undo stack and clears the redo stack. */
     private void saveState() {
         undoStack.push(deepCopy(graph));
         redoStack.clear();
     }
 
-    /** Restores the previous graph state from the undo stack and updates the preview. */
+    /**
+     * Restores the previous state of the graph from the undo stack.
+     */
     private void undo() {
         if (!undoStack.isEmpty()) {
             redoStack.push(deepCopy(graph));
             graph = undoStack.pop();
-            refreshPreview();
-        }
-    }
-
-    /** Reapplies the last undone graph state from the redo stack and updates the preview. */
-    private void redo() {
-        if (!redoStack.isEmpty()) {
-            undoStack.push(deepCopy(graph));
-            graph = redoStack.pop();
+            controller = new SimulationController(graph, null);
             refreshPreview();
         }
     }
 
     /**
-     * Applies dark theme styling to a ComboBox, including the selected item cell.
-     * @param <T> the type of items in the combo box
+     * Restores the next state of the graph from the redo stack.
+     */
+    private void redo() {
+        if (!redoStack.isEmpty()) {
+            undoStack.push(deepCopy(graph));
+            graph = redoStack.pop();
+            controller = new SimulationController(graph, null);
+            refreshPreview();
+        }
+    }
+
+    /**
+     * Applies a dark theme style to a JavaFX ComboBox.
      * @param combo the ComboBox to style
+     * @param <T> the type of items contained in the ComboBox
      */
     private <T> void darkCombo(ComboBox<T> combo) {
         combo.setStyle("-fx-background-color: #303030; -fx-border-color: #616161; -fx-border-radius: 4;");
@@ -158,137 +125,150 @@ public class ConfigView {
     }
 
     /**
-     * Builds and displays the configuration window.
-     * The window contains sections for adding nodes, edges, agents,
-     * saving/loading plans, random generation, and undo/redo controls.
-     * Ctrl+Z and Ctrl+Y are bound to undo and redo respectively.
-     * @param stage the JavaFX stage to display the view on
+     * Initializes and displays the JavaFX configuration window for building a graph
+     * and setting up a simulation.
+     * @param stage the primary JavaFX stage used to display the configuration window
      */
     public void start(Stage stage) {
+        controller = new SimulationController(graph, stage);
         stage.setTitle("Configure Graph");
 
-        String labelStyle = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial;";
-        String titleStyle = "-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 14;";
-        String fieldStyle = "-fx-background-color: #303030; -fx-text-fill: #e0e0e0; -fx-border-color: #616161; -fx-border-radius: 4;";
-        String btnPrimary = "-fx-background-color: #2E7D32; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 6 14 6 14;";
-        String btnSecondary = "-fx-background-color: #424242; -fx-text-fill: #e0e0e0; -fx-background-radius: 6; -fx-cursor: hand; -fx-border-color: #616161; -fx-border-radius: 6; -fx-padding: 6 14 6 14;";
-        String btnDanger = "-fx-background-color: #7B1F1F; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 6 14 6 14;";
+        String labelStyle    = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial;";
+        String titleStyle    = "-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 14;";
+        String fieldStyle    = "-fx-background-color: #303030; -fx-text-fill: #e0e0e0; -fx-border-color: #616161; -fx-border-radius: 4;";
+        String btnPrimary    = "-fx-background-color: #2E7D32; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 6 14 6 14;";
+        String btnSecondary  = "-fx-background-color: #424242; -fx-text-fill: #e0e0e0; -fx-background-radius: 6; -fx-cursor: hand; -fx-border-color: #616161; -fx-border-radius: 6; -fx-padding: 6 14 6 14;";
 
         VBox form = new VBox(15);
         form.setPadding(new Insets(15));
         form.setPrefWidth(420);
         form.setStyle("-fx-background-color: #424242;");
 
-        // UNDO / REDO
+        // --- UNDO / REDO ---
         Button undoBtn = new Button("Undo"); undoBtn.setStyle(btnSecondary);
         Button redoBtn = new Button("Redo"); redoBtn.setStyle(btnSecondary);
         undoBtn.setOnAction(e -> undo());
         redoBtn.setOnAction(e -> redo());
         HBox undoRedoBox = new HBox(10, undoBtn, redoBtn);
 
-        // ADD NODE
+        // --- ADD NODE ---
         Label nodeTitle = new Label("Add Node");
         nodeTitle.setStyle(titleStyle);
         GridPane nodeGrid = new GridPane();
         nodeGrid.setHgap(10); nodeGrid.setVgap(8);
-        TextField nodeId = new TextField(); nodeId.setPromptText("ID (e.g. N1)");
-        TextField nodeName = new TextField(); nodeName.setPromptText("Name (e.g. Room A)");
+
+        TextField nodeId       = new TextField(); nodeId.setPromptText("ID (e.g. N1)");
+        TextField nodeName     = new TextField(); nodeName.setPromptText("Name (e.g. Room A)");
         TextField nodeCapacity = new TextField(); nodeCapacity.setPromptText("Capacity (e.g. 10)");
-        TextField nodeX = new TextField(); nodeX.setPromptText("X position");
-        TextField nodeY = new TextField(); nodeY.setPromptText("Y position");
+        TextField nodeX        = new TextField(); nodeX.setPromptText("X position");
+        TextField nodeY        = new TextField(); nodeY.setPromptText("Y position");
         ComboBox<NodeType> nodeType = new ComboBox<>();
         nodeType.getItems().addAll(NodeType.values());
         nodeType.setValue(NodeType.ROOM);
+
         nodeId.setStyle(fieldStyle); nodeName.setStyle(fieldStyle);
         nodeCapacity.setStyle(fieldStyle); nodeX.setStyle(fieldStyle); nodeY.setStyle(fieldStyle);
         darkCombo(nodeType);
 
-        Label lId1 = new Label("ID:"); lId1.setStyle(labelStyle);
-        Label lName = new Label("Name:"); lName.setStyle(labelStyle);
-        Label lType = new Label("Type:"); lType.setStyle(labelStyle);
-        Label lCap = new Label("Capacity:"); lCap.setStyle(labelStyle);
-        Label lX = new Label("X:"); lX.setStyle(labelStyle);
-        Label lY = new Label("Y:"); lY.setStyle(labelStyle);
-        nodeGrid.add(lId1, 0, 0); nodeGrid.add(nodeId, 1, 0);
-        nodeGrid.add(lName, 0, 1); nodeGrid.add(nodeName, 1, 1);
-        nodeGrid.add(lType, 0, 2); nodeGrid.add(nodeType, 1, 2);
-        nodeGrid.add(lCap, 0, 3);  nodeGrid.add(nodeCapacity, 1, 3);
-        nodeGrid.add(lX, 0, 4);    nodeGrid.add(nodeX, 1, 4);
-        nodeGrid.add(lY, 0, 5);    nodeGrid.add(nodeY, 1, 5);
+        Label lId1  = new Label("ID:");       lId1.setStyle(labelStyle);
+        Label lName = new Label("Name:");     lName.setStyle(labelStyle);
+        Label lType = new Label("Type:");     lType.setStyle(labelStyle);
+        Label lCap  = new Label("Capacity:"); lCap.setStyle(labelStyle);
+        Label lX    = new Label("X:");        lX.setStyle(labelStyle);
+        Label lY    = new Label("Y:");        lY.setStyle(labelStyle);
+
+        nodeGrid.add(lId1,  0, 0); nodeGrid.add(nodeId,       1, 0);
+        nodeGrid.add(lName, 0, 1); nodeGrid.add(nodeName,     1, 1);
+        nodeGrid.add(lType, 0, 2); nodeGrid.add(nodeType,     1, 2);
+        nodeGrid.add(lCap,  0, 3); nodeGrid.add(nodeCapacity, 1, 3);
+        nodeGrid.add(lX,    0, 4); nodeGrid.add(nodeX,        1, 4);
+        nodeGrid.add(lY,    0, 5); nodeGrid.add(nodeY,        1, 5);
+
         Label nodeStatus = new Label(); nodeStatus.setStyle(labelStyle);
         Button addNodeBtn = new Button("Add Node"); addNodeBtn.setStyle(btnPrimary);
         addNodeBtn.setOnAction(e -> {
             try {
-                String id = nodeId.getText().trim();
-                String name = nodeName.getText().trim();
-                int capacity = Integer.parseInt(nodeCapacity.getText().trim());
-                double x = Double.parseDouble(nodeX.getText().trim());
-                double y = Double.parseDouble(nodeY.getText().trim());
+                String id     = nodeId.getText().trim();
+                String name   = nodeName.getText().trim();
+                int capacity  = Integer.parseInt(nodeCapacity.getText().trim());
+                double x      = Double.parseDouble(nodeX.getText().trim());
+                double y      = Double.parseDouble(nodeY.getText().trim());
                 NodeType type = nodeType.getValue();
-                if (id.isEmpty() || name.isEmpty()) { nodeStatus.setText("Error: ID and name are required."); return; }
-                if (graph.getNode(id) != null) { nodeStatus.setText("Error: Node ID already exists."); return; }
 
-                saveState(); //Loaded if undo is pressed
+                if (id.isEmpty() || name.isEmpty()) { nodeStatus.setText("Erreur : ID et nom requis.");           return; }
+                if (graph.getNode(id) != null)       { nodeStatus.setText("Erreur : ID déjà utilisé.");           return; }
+                if (capacity <= 0)                   { nodeStatus.setText("Erreur : capacité doit être > 0.");    return; } // #11
+
+                saveState();
                 graph.addNode(new Node(id, name, x, y, capacity, NodeStatus.OPEN, type, 1.0f));
-                nodeStatus.setText("Node '" + name + "' added.");
+                nodeStatus.setText("Nœud '" + name + "' ajouté.");
                 nodeId.clear(); nodeName.clear(); nodeCapacity.clear(); nodeX.clear(); nodeY.clear();
                 refreshPreview();
             } catch (NumberFormatException ex) {
-                nodeStatus.setText("Error: capacity, X and Y must be numbers.");
+                nodeStatus.setText("Erreur : capacité, X et Y doivent être des nombres.");
             }
         });
 
-        // ADD EDGE
+        // --- ADD EDGE ---
         Label edgeTitle = new Label("Add Edge");
         edgeTitle.setStyle(titleStyle);
         GridPane edgeGrid = new GridPane();
         edgeGrid.setHgap(10); edgeGrid.setVgap(8);
-        TextField edgeId = new TextField(); edgeId.setPromptText("ID (e.g. E1)");
-        TextField edgeSource = new TextField(); edgeSource.setPromptText("Source node ID");
-        TextField edgeTarget = new TextField(); edgeTarget.setPromptText("Target node ID");
-        TextField edgeWidth = new TextField(); edgeWidth.setPromptText("Width (e.g. 5)");
+
+        TextField edgeId       = new TextField(); edgeId.setPromptText("ID (e.g. E1)");
+        TextField edgeSource   = new TextField(); edgeSource.setPromptText("Source node ID");
+        TextField edgeTarget   = new TextField(); edgeTarget.setPromptText("Target node ID");
+        TextField edgeWidth    = new TextField(); edgeWidth.setPromptText("Width (e.g. 5)");
         TextField edgeDistance = new TextField(); edgeDistance.setPromptText("Distance (e.g. 1.0)");
-        CheckBox edgeDirected = new CheckBox("Directed");
+        CheckBox  edgeDirected = new CheckBox("Directed");
+
         edgeId.setStyle(fieldStyle); edgeSource.setStyle(fieldStyle); edgeTarget.setStyle(fieldStyle);
         edgeWidth.setStyle(fieldStyle); edgeDistance.setStyle(fieldStyle);
         edgeDirected.setStyle(labelStyle);
 
-        Label lId2 = new Label("ID:"); lId2.setStyle(labelStyle);
-        Label lSrc = new Label("Source:"); lSrc.setStyle(labelStyle);
-        Label lTgt = new Label("Target:"); lTgt.setStyle(labelStyle);
-        Label lW = new Label("Width:"); lW.setStyle(labelStyle);
-        Label lDist = new Label("Distance:"); lDist.setStyle(labelStyle);
-        edgeGrid.add(lId2, 0, 0); edgeGrid.add(edgeId, 1, 0);
-        edgeGrid.add(lSrc, 0, 1); edgeGrid.add(edgeSource, 1, 1);
-        edgeGrid.add(lTgt, 0, 2); edgeGrid.add(edgeTarget, 1, 2);
-        edgeGrid.add(lW, 0, 3);   edgeGrid.add(edgeWidth, 1, 3);
+        Label lId2   = new Label("ID:");       lId2.setStyle(labelStyle);
+        Label lSrc   = new Label("Source:");   lSrc.setStyle(labelStyle);
+        Label lTgt   = new Label("Target:");   lTgt.setStyle(labelStyle);
+        Label lW     = new Label("Width:");    lW.setStyle(labelStyle);
+        Label lDist  = new Label("Distance:"); lDist.setStyle(labelStyle);
+
+        edgeGrid.add(lId2,  0, 0); edgeGrid.add(edgeId,       1, 0);
+        edgeGrid.add(lSrc,  0, 1); edgeGrid.add(edgeSource,   1, 1);
+        edgeGrid.add(lTgt,  0, 2); edgeGrid.add(edgeTarget,   1, 2);
+        edgeGrid.add(lW,    0, 3); edgeGrid.add(edgeWidth,    1, 3);
         edgeGrid.add(lDist, 0, 4); edgeGrid.add(edgeDistance, 1, 4);
         edgeGrid.add(edgeDirected, 1, 5);
+
         Label edgeStatus = new Label(); edgeStatus.setStyle(labelStyle);
         Button addEdgeBtn = new Button("Add Edge"); addEdgeBtn.setStyle(btnPrimary);
         addEdgeBtn.setOnAction(e -> {
             try {
-                String id = edgeId.getText().trim();
+                String id       = edgeId.getText().trim();
                 String sourceId = edgeSource.getText().trim();
                 String targetId = edgeTarget.getText().trim();
-                int width = Integer.parseInt(edgeWidth.getText().trim());
-                float distance = Float.parseFloat(edgeDistance.getText().trim());
+                int    width    = Integer.parseInt(edgeWidth.getText().trim());
+                float  distance = Float.parseFloat(edgeDistance.getText().trim());
                 boolean directed = edgeDirected.isSelected();
+
                 Node source = graph.getNode(sourceId);
                 Node target = graph.getNode(targetId);
-                if (source == null || target == null) { edgeStatus.setText("Error: source or target node not found."); return; }
 
-                saveState(); //Loaded if undo is pressed
+                if (source == null || target == null) { edgeStatus.setText("Erreur : nœud source ou cible introuvable."); return; }
+                if (source.equals(target))             { edgeStatus.setText("Erreur : source et cible doivent être différents."); return; } // #9
+                if (width <= 0)                        { edgeStatus.setText("Erreur : largeur doit être > 0.");    return; }               // #6
+                if (distance <= 0)                     { edgeStatus.setText("Erreur : distance doit être > 0.");   return; }               // #8
+
+                saveState();
                 graph.addEdge(new Edge(id, source, target, width, distance, 1.0f, directed));
-                edgeStatus.setText("Edge '" + id + "' added.");
+                edgeStatus.setText("Arête '" + id + "' ajoutée.");
                 edgeId.clear(); edgeSource.clear(); edgeTarget.clear(); edgeWidth.clear(); edgeDistance.clear();
                 refreshPreview();
             } catch (NumberFormatException ex) {
-                edgeStatus.setText("Error: width and distance must be numbers.");
+                edgeStatus.setText("Erreur : largeur et distance doivent être des nombres.");
             }
         });
 
-        // ADD AGENTS
+        // --- ADD AGENTS ---
         Label agentTitle = new Label("Add Agents");
         agentTitle.setStyle(titleStyle);
         GridPane agentGrid = new GridPane();
@@ -303,20 +283,13 @@ public class ConfigView {
         agentCount.setPromptText("Number of agents (e.g. 3)");
         agentCount.setStyle(fieldStyle);
 
-        ComboBox<AgentState> agentState = new ComboBox<>();
-        agentState.getItems().addAll(AgentState.values());
-        agentState.setValue(AgentState.CALM);
-        darkCombo(agentState);
-
-        ComboBox<AgentType> agentType = new ComboBox<>();
-        agentType.getItems().addAll(AgentType.values());
-        agentType.setValue(AgentType.ADULT);
-        darkCombo(agentType);
-
+        ComboBox<AgentState>    agentState    = new ComboBox<>();
+        ComboBox<AgentType>     agentType     = new ComboBox<>();
         ComboBox<AgentBehavior> agentBehavior = new ComboBox<>();
-        agentBehavior.getItems().addAll(AgentBehavior.values());
-        agentBehavior.setValue(AgentBehavior.COOPERATIVE);
-        darkCombo(agentBehavior);
+        agentState.getItems().addAll(AgentState.values());       agentState.setValue(AgentState.CALM);
+        agentType.getItems().addAll(AgentType.values());         agentType.setValue(AgentType.ADULT);
+        agentBehavior.getItems().addAll(AgentBehavior.values()); agentBehavior.setValue(AgentBehavior.COOPERATIVE);
+        darkCombo(agentState); darkCombo(agentType); darkCombo(agentBehavior);
 
         Label lAN = new Label("Start Node:"); lAN.setStyle(labelStyle);
         Label lAC = new Label("Count:");      lAC.setStyle(labelStyle);
@@ -335,113 +308,115 @@ public class ConfigView {
         addAgentBtn.setOnAction(e -> {
             try {
                 Node startNode = agentNode.getValue();
-                int count = Integer.parseInt(agentCount.getText().trim());
+                int  count     = Integer.parseInt(agentCount.getText().trim());
                 if (startNode == null || count <= 0) {
-                    agentStatus.setText("Error: select a node and enter a valid count.");
+                    agentStatus.setText("Erreur : sélectionnez un nœud et entrez un nombre valide.");
                     return;
                 }
-                AgentState state = agentState.getValue();
-                AgentType type = agentType.getValue();
-                AgentBehavior behavior = agentBehavior.getValue();
                 for (int i = 0; i < count; i++) {
-                    agents.add(new Agent("agent_" + agents.size(), startNode, 1.0f, state, behavior, type, 0.5f, graph));
+                    agents.add(new Agent(
+                        "agent_" + agents.size(), startNode, 1.0f,
+                        agentState.getValue(), agentBehavior.getValue(), agentType.getValue(),
+                        0.5f, graph
+                    ));
                 }
-                agentStatus.setText(count + " agent(s) added on '" + startNode.getId() + "'.");
+                agentStatus.setText(count + " agent(s) ajouté(s) sur '" + startNode.getId() + "'.");
                 agentCount.clear();
             } catch (NumberFormatException ex) {
-                agentStatus.setText("Error: count must be a number.");
+                agentStatus.setText("Erreur : le nombre doit être un entier.");
             }
         });
 
-        // SAVE / LOAD
+        // --- SAVE / LOAD ---
         Label saveLoadTitle = new Label("Save / Load Plan");
         saveLoadTitle.setStyle(titleStyle);
         Label saveLoadStatus = new Label(); saveLoadStatus.setStyle(labelStyle);
+
         Button saveBtn = new Button("💾 Save Plan"); saveBtn.setStyle(btnSecondary);
         saveBtn.setOnAction(e -> {
-            FileChooser fc = new FileChooser();
-            fc.setTitle("Save Plan");
-            fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("EXIT Plan", "*.exit"));
-            File file = fc.showSaveDialog(stage);
-            if (file != null) {
-                try {
-                    new SimulationState(graph, new ArrayList<>(), 0).save(file.getAbsolutePath());
-                    saveLoadStatus.setText("Plan saved.");
-                } catch (Exception ex) {
-                    saveLoadStatus.setText("Error saving: " + ex.getMessage());
-                }
-            }
+            controller.savePlan();
+            saveLoadStatus.setText("Plan sauvegardé.");
         });
+
         Button loadBtn = new Button("📂 Load Plan"); loadBtn.setStyle(btnSecondary);
         loadBtn.setOnAction(e -> {
-            FileChooser fc = new FileChooser();
-            fc.setTitle("Load Plan");
-            fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("EXIT Plan", "*.exit"));
-            File file = fc.showOpenDialog(stage);
-            if (file != null) {
-                try {
-                    SimulationState state = SimulationState.load(file.getAbsolutePath());
-                    graph = state.getGraph();
-                    saveLoadStatus.setText("Plan loaded.");
-                    refreshPreview();
-                } catch (Exception ex) {
-                    saveLoadStatus.setText("Error loading: " + ex.getMessage());
-                }
+            Graph loaded = controller.loadPlan();
+            if (loaded != null) {
+                graph = loaded;
+                controller = new SimulationController(graph, stage);
+                saveLoadStatus.setText("Plan chargé.");
+                refreshPreview();
             }
         });
         HBox saveLoadButtons = new HBox(10, saveBtn, loadBtn);
 
-        // RANDOM GENERATION
+        // --- RANDOM GENERATION (#12 : cap 2–100) ---
         Button randomBtn = new Button("Random Generation"); randomBtn.setStyle(btnSecondary);
         randomBtn.setOnAction(e -> {
             TextInputDialog dialog = new TextInputDialog("5");
-            dialog.setTitle("Random Generation");
-            dialog.setHeaderText("Generate random nodes and edges");
-            dialog.setContentText("Number of nodes:");
+            dialog.setTitle("Génération aléatoire");
+            dialog.setHeaderText("Générer des nœuds et arêtes aléatoires");
+            dialog.setContentText("Nombre de nœuds (2–100) :");
             Optional<String> result = dialog.showAndWait();
             result.ifPresent(val -> {
                 try {
                     int n = Integer.parseInt(val.trim());
-                    if (n <= 0) return;
-                    generateRandom(n);
+                    if (n < 2) {
+                        new Alert(Alert.AlertType.WARNING, "Minimum 2 nœuds requis.").showAndWait();
+                        return;
+                    }
+                    if (n > 100) {
+                        new Alert(Alert.AlertType.WARNING, "Maximum 100 nœuds (limite performances).").showAndWait();
+                        return;
+                    }
+                    saveState();
+                    controller.generateRandom(n);
+                    refreshPreview();
                 } catch (NumberFormatException ex) {
-                    // entrée invalide, on ignore
+                    new Alert(Alert.AlertType.ERROR, "Entrez un nombre entier valide.").showAndWait();
                 }
             });
         });
 
-        // LAUNCH
+        // --- LAUNCH (#1 : validation EXIT, #3 : validation agents) ---
         Button launchBtn = new Button("▶ Lancer la simulation");
         launchBtn.setStyle(btnPrimary + "-fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 13;");
         launchBtn.setOnAction(e -> {
             new MainView(graph, agents, "config").start(stage);
+            controller.launchSimulation(agents);
+            if (controller.getEngine() != null) {
+                stage.close();
+                new MainView(graph, agents, "config").start(new Stage());
+            }
         });
 
-        // RETOUR
+        // --- RETOUR ---
         Button retourBtn = new Button("← Retour"); retourBtn.setStyle(btnSecondary);
         retourBtn.setOnAction(e -> {
             new HomeView().start(stage);
+            stage.close();
+            new HomeView().start(new Stage());
         });
 
         form.getChildren().addAll(
-                undoRedoBox,
-                new Separator(),
-                nodeTitle, nodeGrid, addNodeBtn, nodeStatus,
-                new Separator(),
-                edgeTitle, edgeGrid, addEdgeBtn, edgeStatus,
-                new Separator(),
-                agentTitle, agentGrid, addAgentBtn, agentStatus,
-                new Separator(),
-                saveLoadTitle, saveLoadButtons, saveLoadStatus,
-                new Separator(),
-                randomBtn,
-                new Separator(),
-                launchBtn, retourBtn
+            undoRedoBox,
+            new Separator(),
+            nodeTitle, nodeGrid, addNodeBtn, nodeStatus,
+            new Separator(),
+            edgeTitle, edgeGrid, addEdgeBtn, edgeStatus,
+            new Separator(),
+            agentTitle, agentGrid, addAgentBtn, agentStatus,
+            new Separator(),
+            saveLoadTitle, saveLoadButtons, saveLoadStatus,
+            new Separator(),
+            randomBtn,
+            new Separator(),
+            launchBtn, retourBtn
         );
 
         // --- PREVIEW ---
         previewCanvas = new Canvas(600, 500);
-        preview = new GraphView(previewCanvas, graph);
+        preview       = new GraphView(previewCanvas, graph);
 
         VBox previewBox = new VBox(8);
         previewBox.setPadding(new Insets(15));
@@ -460,7 +435,9 @@ public class ConfigView {
         stage.setScene(scene);
         stage.show();
 
+        // Ctrl+Z / Ctrl+Y — ignorés si un TextField a le focus (#Ctrl+Z bug)
         scene.setOnKeyPressed(e -> {
+            if (scene.getFocusOwner() instanceof TextField) return;
             if (e.isControlDown() && e.getCode() == KeyCode.Z) undo();
             if (e.isControlDown() && e.getCode() == KeyCode.Y) redo();
         });
@@ -468,15 +445,14 @@ public class ConfigView {
         preview.drawGraph();
     }
 
-    /** Redraws the graph preview canvas with the current graph state. */
+    /**
+     * Refreshes the graphical preview of the graph.
+     */
     private void refreshPreview() {
         preview = new GraphView(previewCanvas, graph);
         preview.drawGraph();
     }
 
-    /**
-     * Returns the graph configured by the user.
-     * @return the current graph
-     */
     public Graph getGraph() { return graph; }
+    
 }

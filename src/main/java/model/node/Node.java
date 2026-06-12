@@ -1,9 +1,9 @@
 package model.node;
+
 import model.agent.Agent;
 import model.agent.AgentState;
 import model.node.NodeStatus;
 import model.node.NodeType;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,22 +36,32 @@ public class Node implements Serializable {
         this.agents = new ArrayList<>();
     }
 
-    /** Returns the number of agents in this node */
+    /** 
+    * @return the number of agents in this node 2
+    */
     public int getOccupancy() {
         return agents.size();
     }
 
-    /** Returns true if there are more agents than the max capacity */
+    /** 
+     * @return true if there are more agents than the max capacity 
+     */
     public boolean isOverloaded() {
         return agents.size() > maxCapacity;
     }
 
-    /** Adds an agent to this node */
+    /** 
+     * Adds an agent to this node 
+     * @param agent agent to add
+     */
     public void addAgent(Agent agent) {
         agents.add(agent);
     }
 
-    /** Removes an agent from this node*/
+    /** 
+     * Removes an agent from this node
+     * @agent agent to delete
+     */
     public void removeAgent(Agent agent) {
         agents.remove(agent);
     }
@@ -71,7 +81,7 @@ public class Node implements Serializable {
 
     @Override
     public String toString() {
-    return "Node{id='" + id + "', name='" + name + "', type=" + type + ", status=" + status + "}";
+        return "Node{id='" + id + "', name='" + name + "', type=" + type + ", status=" + status + "}";
     }
     
 }

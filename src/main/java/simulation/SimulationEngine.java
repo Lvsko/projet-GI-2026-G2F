@@ -19,61 +19,59 @@ import java.util.Map;
  */
 public class SimulationEngine {
 
+    private static final float PANIC_PROBABILITY = 0.20f;
+    
+    private final java.util.Random random = new java.util.Random();
     private Graph graph;
     private List<Agent> agents;
     private Statistics statistics;
     private boolean running;
     private int currentTick;
-
-    // Counters for speed management (Yoni's logic)
     private Map<Agent, Integer> tickCounters;
-
-    // KAN-36: Counters to track how long agents have been stuck waiting for an edge
     private Map<Agent, Integer> stuckCounters;
-
-    // Pathfinder instance needed for recalculation
     private Pathfinder pathfinder;
-
-    // Agents waiting 1 tick at EXIT before being removed (visual effect)
     private List<Agent> exitingAgents;
 
-    // PANIC PROPAGATION MECHANICS
-    private static final float PANIC_PROBABILITY = 0.20f;
-    private final java.util.Random random = new java.util.Random();
-
+    /**
+     * Initializes a simulation engine bound to a specific environment graph.
+     * @param graph simulation environment graph
+     */
     public SimulationEngine(Graph graph) {
-        this.graph = graph;
-        this.agents = new ArrayList<>();
-        this.statistics = new Statistics();
-        this.running = false;
-        this.currentTick = 0;
+        this.graph        = graph;
+        this.agents       = new ArrayList<>();
+        this.statistics   = new Statistics();
+        this.running      = false;
+        this.currentTick  = 0;
         this.tickCounters = new HashMap<>();
         this.stuckCounters = new HashMap<>();
-        this.pathfinder = new Pathfinder();
+        this.pathfinder   = new Pathfinder();
         this.exitingAgents = new ArrayList<>();
     }
 
-    /** Starts the simulation */
+    /** Starts the simulation engine by setting its running state to true */
     public void start() { running = true; }
 
-    /** Pauses the simulation */
+    /** Pauses the simulation engine by setting its running state to false */
     public void pause() { running = false; }
 
-    /** Resets the simulation to its initial state */
+    /** Resets the simulation engine to its initial state */
     public void reset() {
-        running = false;
-        currentTick = 0;
+        running      = false;
+        currentTick  = 0;
         agents.clear();
         tickCounters.clear();
-        stuckCounters.clear(); // Reset stuck counters too
+        stuckCounters.clear();
     }
 
-    /** Advances the simulation by one tick */
+    /**
+     * Advances the simulation by one tick.
+     * This method does not check whether the simulation is running. It is the caller's
+     * responsibility (e.g., UI loop or controller) to decide when stepping is allowed.
+     */
     public void step() {
-        if (!running) return;
         currentTick++;
 
-        // Remove agents that waited 1 tick at EXIT
+        // Retirer les agents qui ont attendu 1 tick à l'EXIT
         for (Agent agent : exitingAgents) {
             if (agent.getCurrentNode() != null) {
                 agent.getCurrentNode().removeAgent(agent);
@@ -91,64 +89,86 @@ public class SimulationEngine {
                 evacuatedAgents.add(agent);
             }
         }
-
-        // Move evacuated agents to exitingAgents (visible 1 tick at EXIT)
         exitingAgents.addAll(evacuatedAgents);
 
-        // Propagate panic before updating statistics
         propagatePanic();
 
         statistics.update(currentTick, (ArrayList<Agent>) agents, graph);
     }
 
-    /** Moves an agent one step forward */
+    /**
+     * Adds an agent to the simulation engine.
+     * @param agent the agent to add to the simulation
+     */
+    public void addAgent(Agent agent) {
+        agents.add(agent);
+        tickCounters.put(agent, 0);
+        stuckCounters.put(agent, 0);
+    }
+
+    /**
+     * Removes an agent to the simulation engine.
+     * @param agent the agent to remove to the simulation
+     */
+    public void removeAgent(Agent agent) {
+        if (agent.getCurrentNode() != null) agent.getCurrentNode().removeAgent(agent);
+        agents.remove(agent);
+        exitingAgents.remove(agent);
+        tickCounters.remove(agent);
+        stuckCounters.remove(agent);
+    }
+
+    public Graph getGraph()              { return graph; }
+    public List<Agent> getAgents()       { return agents; }
+    public List<Agent> getExitingAgents() { return exitingAgents; }
+    public Statistics getStatistics()    { return statistics; }
+    public boolean isRunning()           { return running; }
+    public int getCurrentTick()          { return currentTick; }
+
+    /**
+     * Updates the movement state of an agent during a single simulation tick.
+     * @param agent the agent to update
+     * @return true if the agent reached an exit and should be removed from the simulation
+     */
     private boolean moveAgent(Agent agent) {
         int counter = tickCounters.get(agent);
         tickCounters.put(agent, counter + 1);
 
         boolean canMove;
         switch (agent.getType()) {
-            case CHILD: canMove = (counter % 10) != 2 && (counter % 10) != 5 && (counter % 10) != 9; break; // move 7 ticks out of 10
+            case CHILD: canMove = (counter % 10) != 2 && (counter % 10) != 5 && (counter % 10) != 9; break;
             case PMR:   canMove = (counter % 2) == 0; break;
             default:    canMove = true;
         }
-
         if (canMove) {
             if (agent.isInTransit()) {
-                // Agent is moving inside a corridor (Edge)
+                // Agent en transit dans un couloir
                 Edge edge = agent.getCurrentEdge();
-                Node destination;
-
-                if (edge.getSource().equals(agent.getPreviousNode())) {
-                    destination = edge.getTarget();
-                } else {
-                    destination = edge.getSource();
-                }
+                Node destination = edge.getSource().equals(agent.getPreviousNode())
+                    ? edge.getTarget()
+                    : edge.getSource();
 
                 agent.arriveAt(destination);
 
                 if (destination.getType() == model.node.NodeType.EXIT) {
                     destination.removeAgent(agent);
-                    return true; // Agent evacuated
+                    return true;
                 }
-
             } else if (!agent.getCurrentPath().isEmpty()) {
-                // Agent is in a node, waiting to enter the next edge
+                // Agent dans un nœud, en attente d'entrer dans l'arête suivante
                 Node nextNode = agent.getCurrentPath().get(0);
-                Edge edge = findEdge(agent.getCurrentNode(), nextNode);
+                Edge edge     = findEdge(agent.getCurrentNode(), nextNode);
 
                 if (edge != null) {
                     if (edge.isAvailable() && agent.moveToEdge(edge)) {
                         statistics.recordAgentPassedEdge(edge);
                         agent.getCurrentPath().remove(0);
                         stuckCounters.put(agent, 0);
-                        // Exit immédiat si la destination est EXIT
-                        Node destination;
-                        if (edge.getSource().equals(agent.getPreviousNode())) {
-                            destination = edge.getTarget();
-                        } else {
-                            destination = edge.getSource();
-                        }
+
+                        Node destination = edge.getSource().equals(agent.getPreviousNode())
+                            ? edge.getTarget()
+                            : edge.getSource();
+
                         if (destination.getType() == model.node.NodeType.EXIT) {
                             agent.arriveAt(destination);
                             statistics.recordAgentPassedNode(destination);
@@ -156,106 +176,80 @@ public class SimulationEngine {
                             return true;
                         }
                     } else {
-                        // Edge plein — incrémenter le compteur de blocage
+                        // Arête pleine → incrémenter le compteur de blocage
                         int stuckTicks = stuckCounters.getOrDefault(agent, 0) + 1;
                         stuckCounters.put(agent, stuckTicks);
-                        // Recalculer le chemin après 3 ticks bloqué
+
                         if (stuckTicks >= 3) {
                             List<Node> newPath = pathfinder.dijkstraTime(
-                                    agent.getCurrentNode(),
-                                    agent.getDestinationNode(),
-                                    graph
+                                agent.getCurrentNode(),
+                                agent.getDestinationNode(),
+                                graph
                             );
-                            if (newPath != null && !newPath.isEmpty()) {
-                                newPath.remove(0);
-                            }
-                            agent.setCurrentPath(newPath);
+                            if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
+                            agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
                             stuckCounters.put(agent, 0);
                         }
                     }
+                }
+
+            } else {
+                // Aucun chemin disponible — réessayer à chaque tick.
+                // Couvre : arête/nœud supprimé puis nouveau chemin créé,
+                //          ou graphe temporairement déconnecté.
+                int stuckTicks = stuckCounters.getOrDefault(agent, 0) + 1;
+                stuckCounters.put(agent, stuckTicks);
+
+                if (stuckTicks >= 1) {
+                    List<Node> newPath = pathfinder.dijkstraTime(
+                        agent.getCurrentNode(),
+                        agent.getDestinationNode(),
+                        graph
+                    );
+                    if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
+                    agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
+                    stuckCounters.put(agent, 0);
                 }
             }
         }
         return false;
     }
 
-    /** Finds the edge connecting two nodes */
+    /**
+     * Finds an edge connecting two nodes in the graph.
+     * @param from the source node
+     * @param to the target node
+     * @return the edge connecting the two nodes
+     */
     private Edge findEdge(Node from, Node to) {
         for (Edge edge : graph.getEdges()) {
-            if (edge.getSource().equals(from) && edge.getTarget().equals(to)) {
-                return edge;
-            }
-            if (!edge.isDirected() && edge.getTarget().equals(from) && edge.getSource().equals(to)) {
-                return edge;
-            }
+            if (edge.getSource().equals(from) && edge.getTarget().equals(to)) return edge;
+            if (!edge.isDirected() && edge.getTarget().equals(from) && edge.getSource().equals(to)) return edge;
         }
         return null;
     }
 
     /**
-     * Spreads panic between agents sharing the same node.
-     * Emergent behavior: A calm agent has a 20% chance to become panicked
-     * if exposed to a panicked agent on the same node.
+     * Propagates panic between agents located on the same node.
      */
     private void propagatePanic() {
         Map<Node, List<Agent>> agentsOnNodes = new HashMap<>();
-
-        // Group agents by their current node (excluding those in transit in corridors)
         for (Agent agent : agents) {
             if (!agent.isInTransit() && agent.getCurrentNode() != null) {
                 agentsOnNodes.computeIfAbsent(agent.getCurrentNode(), k -> new ArrayList<>()).add(agent);
             }
         }
-
-        // Evaluate each node individually
         for (List<Agent> nodeAgents : agentsOnNodes.values()) {
-            if (nodeAgents.size() < 2) continue; // Optimization
-
-            // Check if there is at least one PANICKED agent on this node
-            boolean hasPanickedAgent = false;
-            for (Agent a : nodeAgents) {
-                if (a.getState() == AgentState.PANICKED) {
-                    hasPanickedAgent = true;
-                    break;
-                }
-            }
-
-            // If "infected", roll the dice for CALM agents
-            if (hasPanickedAgent) {
+            if (nodeAgents.size() < 2) continue;
+            boolean hasPanicked = nodeAgents.stream().anyMatch(a -> a.getState() == AgentState.PANICKED);
+            if (hasPanicked) {
                 for (Agent a : nodeAgents) {
-                    if (a.getState() == AgentState.CALM) {
-                        if (random.nextFloat() < PANIC_PROBABILITY) {
-                            a.setState(AgentState.PANICKED);
-                        }
+                    if (a.getState() == AgentState.CALM && random.nextFloat() < PANIC_PROBABILITY) {
+                        a.setState(AgentState.PANICKED);
                     }
                 }
             }
         }
     }
 
-    /** Adds an agent to the simulation */
-    public void addAgent(Agent agent) {
-        agents.add(agent);
-        tickCounters.put(agent, 0);
-        stuckCounters.put(agent, 0); // Initialize stuck counter
-    }
-
-    /** Removes an agent from the simulation */
-    public void removeAgent(Agent agent) {
-        if (agent.getCurrentNode() != null) {
-            agent.getCurrentNode().removeAgent(agent);
-        }
-        agents.remove(agent);
-        exitingAgents.remove(agent);
-        tickCounters.remove(agent);
-        stuckCounters.remove(agent);
-    }
-
-    // Getters
-    public Graph getGraph() { return graph; }
-    public List<Agent> getAgents() { return agents; }
-    public List<Agent> getExitingAgents() { return exitingAgents; }
-    public Statistics getStatistics() { return statistics; }
-    public boolean isRunning() { return running; }
-    public int getCurrentTick() { return currentTick; }
 }

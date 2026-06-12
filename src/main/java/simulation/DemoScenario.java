@@ -22,8 +22,13 @@ import model.agent.AgentType;
 public class DemoScenario {
 
     private static Graph lastGraph;
+
     public static Graph getLastGraph() { return lastGraph; }
 
+    /**
+     * Builds a predefined simulation graph used for evacuation scenarios.
+     * @return initialized graph containing nodes and edges of the scenario
+     */
     public static Graph createGraph() {
         Graph g = new Graph();
         // Floor 2
@@ -57,8 +62,10 @@ public class DemoScenario {
         g.addEdge(new Edge("E11", n7,  n8,  4, 1.0f, 1.0f, false)); // Corridor 2 ↔ Corridor 3
         return g;
     }
+    
     /**
      * Best case : all agents are CALM, all exits open, nodes filled at 50%.
+     * @return list of agents in the generated scenario
      */
     public static List<Agent> bestCase() {
         Graph g = createGraph();
@@ -68,6 +75,7 @@ public class DemoScenario {
 
     /**
      * Average case : mix CALM/INJURED, one edge reduced, nodes filled at 50%.
+     * @return a list of agents initialized for the average-case scenario
      */
     public static List<Agent> averageCase() {
         Graph g = createGraph();
@@ -84,6 +92,7 @@ public class DemoScenario {
 
     /**
      * Worst case : all agents PANICKED, one exit blocked, nodes filled at 70%.
+     * @return a list of agents initialized for the worst-case scenario
      */
     public static List<Agent> worstCase() {
         Graph g = createGraph();
@@ -105,9 +114,14 @@ public class DemoScenario {
         return createAgents(g, 0.85f, AgentState.PANICKED, null, null);
     }
 
+
     /**
      * Fills non-EXIT nodes at the given ratio and creates agents.
-     * @param state if null, alternates CALM/INJURED
+     * @param g the graph in which agents are created
+     * @param fillRatio proportion of each node's capacity used to determine agent count (0.0 to 1.0)
+     * @param state fixed state for all agents, or {@code null} to alternate CALM/INJURED
+     * @param behavior behavior assigned to agents (currently not used in implementation)
+     * @param type physical type assigned to agents (currently not used in implementation)
      * @return list of agents placed on the graph
      */
     private static List<Agent> createAgents(Graph g, float fillRatio, AgentState state, AgentBehavior behavior, AgentType type) {
@@ -136,4 +150,5 @@ public class DemoScenario {
         }
         return agents;
     }
+    
 }

@@ -23,6 +23,10 @@ import javafx.stage.Stage;
  */
 public class ScenarioSelectorView extends Application {
 
+    /**
+     * Initializes and displays the scenario selection screen for demo mode.
+     * @param stage the primary JavaFX stage used to display the scene
+     */
     @Override
     public void start(Stage stage) {
         // Title
@@ -123,6 +127,10 @@ public class ScenarioSelectorView extends Application {
         stage.show();
     }
 
+    /**
+     * Launches the JavaFX application for scenario selection.
+     * @param args command-line arguments (not used)
+     */
     public static void main(String[] args) {
         launch();
     }
