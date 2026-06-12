@@ -1,6 +1,7 @@
 package view;
 
 import model.Graph;
+import javafx.scene.layout.StackPane;
 import model.agent.Agent;
 import model.agent.AgentState;
 import simulation.SimulationEngine;
@@ -286,7 +287,8 @@ public class MainView extends Application {
 =======
         statsPanel.setMinWidth(200);
 
-        HBox mainContent = new HBox(canvas, statsPanel);
+        StackPane canvasWrapper = new StackPane(canvas);
+        HBox mainContent = new HBox(canvasWrapper, statsPanel);
 
         HBox.setHgrow(canvas, Priority.ALWAYS);
 
