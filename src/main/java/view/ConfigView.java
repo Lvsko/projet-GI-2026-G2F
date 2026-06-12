@@ -386,10 +386,7 @@ public class ConfigView {
         launchBtn.setStyle(btnPrimary + "-fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 13;");
         // Validate via controller, then navigate on the same stage (KAN-39)
         launchBtn.setOnAction(e -> {
-            controller.launchSimulation(agents);
-            if (controller.getEngine() != null) {
-                new MainView(graph, agents, "config").start(stage);
-            }
+            new MainView(graph, agents, "config").start(stage);
         });
 
         // ── Back button ──────────────────────────────────────────────────────────
