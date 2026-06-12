@@ -12,7 +12,6 @@ import model.agent.AgentState;
 import model.node.NodeStatus;
 import model.node.NodeType;
 import simulation.SimulationEngine;
-import simulation.Pathfinder;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.scene.control.ComboBox;
