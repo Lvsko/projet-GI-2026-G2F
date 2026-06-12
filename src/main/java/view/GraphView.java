@@ -105,9 +105,8 @@ public class GraphView {
                                 if (w <= 0)    { errorLabel.setText("La largeur doit être > 0.");  return; }
                                 if (dist <= 0) { errorLabel.setText("La distance doit être > 0."); return; }
                                 if (spd <= 0)  { errorLabel.setText("La vitesse doit être > 0.");  return; }
-                                Edge newEdge = new Edge(edgeId, connectSource, node, w, dist, spd, directedBox.getValue());
+                                Edge newEdge = controller.addEdge(edgeId, connectSource, node, w, dist, spd, directedBox.getValue());
                                 edges.add(newEdge);
-                                graph.addEdge(newEdge);
                                 connectMode   = false;
                                 connectSource = null;
                                 drawGraph();
