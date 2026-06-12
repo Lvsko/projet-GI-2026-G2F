@@ -55,6 +55,12 @@ public class GraphView {
     private boolean connectMode = false;
     private Node connectSource = null;
 
+    /**
+     * Constructs a GraphView responsible for rendering and interacting with a graph
+     * on a JavaFX Canvas.
+     * @param canvas the JavaFX canvas used for rendering the graph
+     * @param graph the underlying graph model to visualize and manipulate
+     */
     public GraphView(Canvas canvas, Graph graph) {
         this.canvas = canvas;
         this.gc = canvas.getGraphicsContext2D();
@@ -212,14 +218,42 @@ public class GraphView {
         });
     }
 
+    /**
+     * Converts a screen X coordinate (pixel space) into a world X coordinate
+     * based on the current camera offset and zoom level.
+     * @param screenX the X coordinate in screen space (pixels)
+     * @return the corresponding X coordinate in world space
+     */
     private double toWorldX(double screenX) { return (screenX - offsetX) / zoom; }
+
+    /**
+     * Converts a screen Y coordinate (pixel space) into a world Y coordinate
+     * based on the current camera offset and zoom level.
+     * @param screenY the Y coordinate in screen space (pixels)
+     * @return the corresponding Y coordinate in world space
+     */
     private double toWorldY(double screenY) { return (screenY - offsetY) / zoom; }
 
+    /**
+     * Checks whether a given point in world coordinates is inside the bounding box of a node.
+     * @param node the node to test against
+     * @param x the X coordinate in world space
+     * @param y the Y coordinate in world space
+     * @return true if the point lies within the node's bounds, false otherwise
+     */
     private boolean hitNode(Node node, double x, double y) {
         return x >= node.getX() && x <= node.getX() + 120
             && y >= node.getY() && y <= node.getY() + 60;
     }
 
+    /**
+     * Determines whether a point in world coordinates is close enough to an edge
+     * to be considered as "hitting" it.
+     * @param edge the edge to test against
+     * @param mx the X coordinate of the mouse in world space
+     * @param my the Y coordinate of the mouse in world space
+     * @return true if the point is within interaction range of the edge, false otherwise
+     */
     private boolean hitEdge(Edge edge, double mx, double my) {
         double x1   = edge.getSource().getX() + 60;
         double y1   = edge.getSource().getY() + 30;
@@ -233,11 +267,20 @@ public class GraphView {
         return Math.sqrt((mx - px) * (mx - px) + (my - py) * (my - py)) < 8;
     }
 
+    /**
+     * Sets the simulation engine used by this view and synchronizes the local
+     * agent list with the engine's current state.
+     * @param engine the simulation engine to attach to this view
+     */
     public void setEngine(SimulationEngine engine) {
         this.engine = engine;
         this.agents = new ArrayList<>(engine.getAgents());
     }
 
+    /**
+     * Opens a modal dialog allowing the user to spawn a new agent at the currently
+     * selected node, or at the first available ROOM node if none is selected.
+     */
     public void spawnAgentAtRoom() {
         Node target = selectedNode;
         if (target == null) {
@@ -279,6 +322,10 @@ public class GraphView {
         popup.showAndWait();
     }
 
+    /**
+     * Opens a modal dialog to create a new ROOM node at the last clicked position
+     * on the canvas.
+     */
     public void addRoomNode() {
         String id = "N" + (nodeCounter + 1);
         Stage popup = new Stage();
@@ -328,6 +375,9 @@ public class GraphView {
         popup.showAndWait();
     }
 
+    /**
+     * Activates edge creation mode starting from the currently selected node.
+     */
     public void startAddEdge() {
         if (selectedNode == null) return;
         connectMode   = true;
@@ -336,7 +386,11 @@ public class GraphView {
     }
 
     /**
-     * Vérifie si le chemin courant d'un agent emprunte l'arête src→tgt (ou tgt→src).
+     * Checks whether an agent's current planned path uses a given edge between two nodes.
+      * @param agent the agent whose path is being analyzed
+     * @param src one endpoint of the edge
+     * @param tgt the other endpoint of the edge
+     * @return true if the agent's path uses the edge, false otherwise
      */
     private boolean pathUsesEdge(Agent agent, Node src, Node tgt) {
         List<Node> path = agent.getCurrentPath();
@@ -363,7 +417,6 @@ public class GraphView {
             drawGraph();
             return;
         }
-
         if (selectedEdge != null) {
             Node edgeSource = selectedEdge.getSource();
             Node edgeTarget = selectedEdge.getTarget();
@@ -375,7 +428,6 @@ public class GraphView {
             for (Agent agent : allAgents) {
                 if (pathUsesEdge(agent, edgeSource, edgeTarget)) agentsToReroute.add(agent);
             }
-
             // Supprimer EN PREMIER pour que Dijkstra ne réutilise pas l'arête supprimée
             edges.remove(selectedEdge);
             graph.removeEdge(selectedEdge.getId());
@@ -390,7 +442,6 @@ public class GraphView {
                     agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
                 }
             }
-
             for (Agent agent : agentsToReroute) {
                 Node currentNode = agent.getCurrentNode();
                 if (currentNode != null && agent.getDestinationNode() != null) {
@@ -399,12 +450,10 @@ public class GraphView {
                     agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
                 }
             }
-
             selectedEdge = null;
             drawGraph();
             return;
         }
-
         if (selectedNode == null) return;
 
         // KAN-13 : déplacer les agents vers un voisin avant suppression
@@ -436,6 +485,7 @@ public class GraphView {
         drawGraph();
     }
 
+    /** Renders the entire graph onto the canvas. */
     public void drawGraph() {
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
         gc.save();
@@ -612,6 +662,11 @@ public class GraphView {
         }
     }
 
+    /**
+     * Returns the display color associated with an agent's current state.
+     * @param agent the agent whose state is used to determine the color
+     * @return the JavaFX Color representing the agent's state
+     */
     private Color agentColor(Agent agent) {
         switch (agent.getState()) {
             case CALM:     return Color.GREEN;
