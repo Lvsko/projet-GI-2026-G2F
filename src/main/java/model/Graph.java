@@ -22,17 +22,27 @@ public class Graph implements Serializable {
         edges = new ArrayList<>();
     }
 
-    /** Adds a node to the graph */
+    /** 
+     * Adds a node to the graph 
+     * @param node the node to add to the graph
+     */
     public void addNode(Node node) {
         nodes.add(node);
     }
 
-    /** Adds an edge to the graph */
+    /** 
+     * Adds an edge to the graph 
+     * @param edge to add to the graph
+     */
     public void addEdge(Edge edge) {
         edges.add(edge);
     }
 
-    /** Removes a node and all its connected edges from the graph */
+    /** 
+     * Removes a node and all its connected edges from the graph 
+     * @param id the identifier of the node to remove
+     * @return a list of agents that were lost during the removal process
+     */
     public List<Agent> removeNode(String id) {
         List<Agent> lostAgents = new ArrayList<>();
         Node toRemove = getNode(id);
@@ -88,7 +98,11 @@ public class Graph implements Serializable {
         return lostAgents; // We return the casualties to the SimulationEngine
     }
 
-    /** Removes an edge and moves its agents back to the source node */
+    /** 
+     * Removes an edge and moves its agents back to the source node 
+     * @param id the identifier of the edge to remove
+     * @return list of agents that were moved from the edge
+     */
     public List<Agent> removeEdge(String id) {
         List<Agent> relocatedAgents = new ArrayList<>();
         Edge toRemove = getEdge(id);
@@ -109,7 +123,11 @@ public class Graph implements Serializable {
         return relocatedAgents;
     }
 
-    /** Returns the list of neighbors of a given node */
+    /** 
+     * Returns the list of neighbors of a given node 
+     * @param node the reference node
+     * @return list of adjacent nodes
+     */
     public List<Node> getNeighbors(Node node) {
         List<Node> neighbors = new ArrayList<>();
         for (Edge e : edges) {
@@ -122,7 +140,10 @@ public class Graph implements Serializable {
         return neighbors;
     }
 
-    /** Returns a node by its id, null if not found */
+    /** 
+     * @param id the identifier of the node to search for
+     * @return a node by its id, null if not found 
+     */
     public Node getNode(String id) {
         for (Node n : nodes) {
             if (n.getId().equals(id)) return n;
@@ -130,7 +151,10 @@ public class Graph implements Serializable {
         return null;
     }
 
-    /** Returns an edge by its id, null if not found */
+    /** 
+     * @param id the identifier of the edge to search for
+     * @return an edge by its id, null if not found 
+     */
     public Edge getEdge(String id) {
         for (Edge e : edges) {
             if (e.getId().equals(id)) return e;
@@ -138,7 +162,10 @@ public class Graph implements Serializable {
         return null;
     }
 
-    /** Returns all nodes of a given type */
+    /** 
+     * @param type the type of nodes to search for
+     * @return a list of all nodes of a given type 
+     */
     public List<Node> getNodesByType(NodeType type) {
         List<Node> result = new ArrayList<>();
         for (Node n : nodes) {
