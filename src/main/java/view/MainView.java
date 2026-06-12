@@ -1,16 +1,14 @@
 package view;
 
+import controller.SimulationController;
 import model.Graph;
 import model.agent.Agent;
 import model.agent.AgentState;
-import simulation.SimulationEngine;
-import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
@@ -22,6 +20,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import java.util.List;
+import simulation.SimulationEngine;
 
 /**
  * Main JavaFX view of the EXIT application.
@@ -86,6 +85,7 @@ public class MainView extends Application {
     @Override
     public void start(Stage stage) {
 
+
         // ── Canvas — bound to stage size so it fills available space (KAN-39) ──
         Canvas canvas = new Canvas();
         canvas.widthProperty().bind(stage.widthProperty().subtract(250));
@@ -96,12 +96,11 @@ public class MainView extends Application {
         canvas.heightProperty().addListener((obs, oldVal, newVal) -> renderer.drawGraph());
         renderer.drawGraph();
 
-        SimulationEngine engine = new SimulationEngine(graph);
-        for (Agent agent : agents) {
-            engine.addAgent(agent);
-        }
-        renderer.setEngine(engine);
-
+        SimulationController controller = new SimulationController(graph, stage);
+        controller.launchSimulation(agents);
+        renderer.setEngine(controller.getEngine());
+        SimulationEngine engine = controller.getEngine();
+        
         // ── Stats panel ──────────────────────────────────────────────────────────
         String statStyle  = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial; -fx-font-size: 13;";
         String titleStyle = "-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 15;";
@@ -144,10 +143,9 @@ public class MainView extends Application {
         Label speedLabel = new Label("Vitesse : 1 tick/s");
         speedLabel.setStyle("-fx-text-fill: #e0e0e0; -fx-font-size: 11;");
 
-        final long[] tickInterval = { 1_000_000_000L };
         speedSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
             double tps = newVal.doubleValue();
-            tickInterval[0] = (long) (1_000_000_000L / tps);
+            controller.setSpeed(tps);
             speedLabel.setText(String.format("Vitesse : %.1f tick/s", tps));
         });
 
@@ -167,66 +165,18 @@ public class MainView extends Application {
             injuredLabel.setText("Blessés : "   + injured);
         };
 
-        // ── Animation timer ───────────────────────────────────────────────────────
-        AnimationTimer timer = new AnimationTimer() {
-            private long lastTick        = 0;
-            private int  ticksNoProgress = 0;
-            private int  lastEvacuated   = 0;
+        controller.startTimer(renderer, updateStats);
+        stage.setOnCloseRequest(e -> controller.stopTimer());
 
-            @Override
-            public void handle(long now) {
-                if (!engine.isRunning()) return;
-                if (now - lastTick < tickInterval[0]) return;
-
-                engine.step();
-                renderer.drawGraph();
-                lastTick = now;
-                updateStats.run();
-
-                // Stall detection: 100 consecutive ticks with no new evacuation
-                int currentEvacuated = engine.getStatistics().getEvacuatedCount();
-                if (currentEvacuated > lastEvacuated) {
-                    ticksNoProgress = 0;
-                    lastEvacuated   = currentEvacuated;
-                } else {
-                    ticksNoProgress++;
-                }
-                if (ticksNoProgress >= 100 && !engine.getAgents().isEmpty()) {
-                    engine.pause();
-                    this.stop();
-                    Alert alert = new Alert(Alert.AlertType.WARNING);
-                    alert.setTitle("Simulation bloquée");
-                    alert.setHeaderText(engine.getAgents().size() + " agent(s) bloqués");
-                    alert.setContentText(
-                        "Aucun agent évacué depuis 100 ticks.\n" +
-                        "Vérifiez que tous les nœuds sont connectés à une sortie EXIT."
-                    );
-                    alert.showAndWait();
-                    stage.setScene(new ResultView().createScene(stage, engine));
-                    return;
-                }
-
-                // Normal end of simulation
-                if (engine.getAgents().isEmpty() && engine.getExitingAgents().isEmpty()) {
-                    engine.pause();
-                    this.stop();
-                    stage.setScene(new ResultView().createScene(stage, engine));
-                }
-            }
-        };
-        timer.start();
-
-        // Stop the timer when the window is closed with the X button
-        stage.setOnCloseRequest(e -> timer.stop());
 
         // ── Buttons ───────────────────────────────────────────────────────────────
         Button pauseButton = styledButton("▶ Démarrer", "#2E7D32");
         pauseButton.setOnAction(e -> {
             if (engine.isRunning()) {
-                engine.pause();
+                controller.pause();
                 pauseButton.setText("▶ Reprendre");
             } else {
-                engine.start();
+                controller.start();
                 pauseButton.setText("⏸ Pause");
             }
         });
@@ -234,11 +184,11 @@ public class MainView extends Application {
         Button stepButton = styledButton("⏭ Pas", "#1565C0");
         stepButton.setOnAction(e -> {
             if (!engine.isRunning()) {
-                engine.step();
+                controller.step();
                 renderer.drawGraph();
                 updateStats.run();
                 if (engine.getAgents().isEmpty() && engine.getExitingAgents().isEmpty()) {
-                    timer.stop();
+                    controller.stopTimer();
                     stage.setScene(new ResultView().createScene(stage, engine));
                 }
             }
@@ -246,8 +196,8 @@ public class MainView extends Application {
 
         Button endButton = styledButton("⏹ Terminer", "#7B1F1F");
         endButton.setOnAction(e -> {
-            engine.pause();
-            timer.stop();
+            controller.pause();
+            controller.stopTimer();
             stage.setScene(new ResultView().createScene(stage, engine));
         });
 
@@ -264,8 +214,8 @@ public class MainView extends Application {
 
         // Reuse the same stage to avoid window size jump on navigation (KAN-39)
         retourButton.setOnAction(e -> {
-            engine.pause();
-            timer.stop();
+            controller.pause();
+            controller.stopTimer();
             if ("demo".equals(source)) {
                 new ScenarioSelectorView().start(stage);
             } else {
