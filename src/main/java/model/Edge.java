@@ -32,22 +32,32 @@ public class Edge implements Serializable {
         this.agents = new ArrayList<>();
     }
 
-    /** Returns the number of agents currently in this edge */
+    /** 
+     * @return the number of agents currently in this edge 
+     */
     public int getOccupancy() {
         return agents.size();
     }
 
-    /** Returns true if the edge can still accept more agents */
+    /** 
+     * @return true if the edge can still accept more agents 
+     */
     public boolean isAvailable() {
         return agents.size() < width;
     }
 
-    /** Adds an agent to this edge */
+    /** 
+     * Adds an agent to this edge 
+     * @param agent agent to add
+     */
     public void addAgent(Agent agent) {
         agents.add(agent);
     }
 
-    /** Removes an agent from this edge */
+    /** 
+     * Removes an agent from this edge 
+     * @param agent to remove
+     */
     public void removeAgent(Agent agent) {
         agents.remove(agent);
     }
@@ -76,7 +86,7 @@ public class Edge implements Serializable {
 
     @Override
     public String toString() {
-    return "Edge{id='" + id + "', from='" + source.getId() + "', to='" + target.getId() + "', width=" + width + "}";
+        return "Edge{id='" + id + "', from='" + source.getId() + "', to='" + target.getId() + "', width=" + width + "}";
     }
 
 
