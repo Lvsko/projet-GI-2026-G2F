@@ -18,6 +18,12 @@ import javafx.stage.Stage;
  */
 public class HomeView extends Application {
 
+    /**
+     * Initializes and displays the home screen of the EXIT application.
+     * Provides navigation to the demo scenarios or configuration screen.
+     *
+     * @param stage the primary stage provided by JavaFX
+     */
     @Override
     public void start(Stage stage) {
         // Title
@@ -98,6 +104,10 @@ public class HomeView extends Application {
         stage.show();
     }
 
+    /**
+     * Launches the JavaFX application.
+     * @param args command-line arguments (not used)
+     */
     public static void main(String[] args) {
         launch();
     }
