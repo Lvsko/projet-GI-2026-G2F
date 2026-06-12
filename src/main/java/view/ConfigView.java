@@ -205,7 +205,7 @@ public class ConfigView {
                 if (graph.getNode(id) != null)       { nodeStatus.setText("Erreur : ID déjà utilisé.");        return; }
                 if (capacity <= 0)                   { nodeStatus.setText("Erreur : capacité doit être > 0."); return; }
                 saveState();
-                graph.addNode(new Node(id, name, x, y, capacity, NodeStatus.OPEN, type, 1.0f));
+                controller.addNode(id, name, x, y, capacity, NodeStatus.OPEN, type, 1.0f);
                 nodeStatus.setText("Nœud '" + name + "' ajouté.");
                 nodeId.clear(); nodeName.clear(); nodeCapacity.clear(); nodeX.clear(); nodeY.clear();
                 refreshPreview();
@@ -262,7 +262,7 @@ public class ConfigView {
                 if (width <= 0)                        { edgeStatus.setText("Erreur : largeur doit être > 0.");                   return; }
                 if (distance <= 0)                     { edgeStatus.setText("Erreur : distance doit être > 0.");                  return; }
                 saveState();
-                graph.addEdge(new Edge(id, source, target, width, distance, 1.0f, directed));
+                controller.addEdge(id, source, target, width, distance, 1.0f, directed);
                 edgeStatus.setText("Arête '" + id + "' ajoutée.");
                 edgeId.clear(); edgeSource.clear(); edgeTarget.clear(); edgeWidth.clear(); edgeDistance.clear();
                 refreshPreview();
