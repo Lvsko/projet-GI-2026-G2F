@@ -4,7 +4,6 @@ import model.agent.Agent;
 import model.agent.AgentState;
 import model.node.NodeStatus;
 import model.node.NodeType;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
