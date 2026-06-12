@@ -89,24 +89,36 @@ public class Statistics implements Serializable {
 		
 	}
 	
-	/** Called when an agent passes through a node */
+	/** 
+	 * Called when an agent passes through a node 
+	 * @param node the node that has been passed by an agent
+	 */
     public void recordAgentPassedNode(Node node) {
         nodePassCount.put(node, nodePassCount.getOrDefault(node, 0) + 1);
     }
 
-    /** Called when an agent passes through an edge */
+    /** 
+	 * Called when an agent passes through an edge
+	 * @param edge the edge that has been crossed by an agent
+	 */
     public void recordAgentPassedEdge(Edge edge) {
         edgePassCount.put(edge, edgePassCount.getOrDefault(edge, 0) + 1);
     }
 
-    /** Called when an agent is evacuated */
+    /** 
+	 * Called when an agent is evacuated 
+	 * @param agentId the identifier of the evacuated agent
+	 * @param tick the simulation tick at which the agent exited
+	 */
     public void recordAgentEvacuated(String agentId, int tick) {
         agentEvacuationTicks.put(agentId, tick);
         evacuatedCount++;
     }
 	
 
-	/** Returns the average evacuation time across all evacuated agents */
+	/** 
+	 * @return the average evacuation time across all evacuated agents 
+	 */
     public float getAverageEvacuationTime() {
         if (agentEvacuationTicks.isEmpty()) return 0;
         int total = 0;
@@ -148,21 +160,10 @@ public class Statistics implements Serializable {
 
         return analysis;
     }
-	
-	/**
-	 * @return the number of evacuated agents
-	 */
+
 	public int getEvacuatedCount() { return evacuatedCount; }
-	/**
-	 * @return the total number of ticks elapsed
-	 */
 	public int getTotalTicks() { return totalTicks; }
-
-	/**
-	 * @return the list of congested edges
-	 */
 	public List<Edge> getBottlenecks() { return bottlenecks; }
-
 	public Map<Edge, Integer> getEdgePassCount() { return edgePassCount; }
     public Map<Node, Integer> getNodePassCount() { return nodePassCount; }
     public Map<Edge, Integer> getEdgePeakOccupancy() { return edgePeakOccupancy; }
