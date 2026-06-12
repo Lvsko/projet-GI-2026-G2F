@@ -14,19 +14,23 @@ import javafx.stage.Stage;
 
 /**
  * Home screen of the EXIT application.
+ * Entry point for navigating to demo scenarios or the configuration screen.
+ *
  * @author Yoni
  */
 public class HomeView extends Application {
 
     /**
      * Initializes and displays the home screen of the EXIT application.
-     * Provides navigation to the demo scenarios or configuration screen.
+     * Sets the initial window size only on the first launch so that navigating
+     * back to this view does not reset the window dimensions (KAN-39).
      *
      * @param stage the primary stage provided by JavaFX
      */
     @Override
     public void start(Stage stage) {
-        // Title
+
+        // ── Title ─────────────────────────────────────────────────────────────
         Label title = new Label("EXIT");
         title.setFont(Font.font("Georgia", FontWeight.BOLD, 68));
         title.setTextFill(Color.web("#2E7D32"));
@@ -38,7 +42,7 @@ public class HomeView extends Application {
         VBox titleBox = new VBox(8, title, subtitle);
         titleBox.setAlignment(Pos.CENTER);
 
-        // Demo button
+        // ── Demo button ───────────────────────────────────────────────────────
         Label demoTitle = new Label("Démo");
         demoTitle.setFont(Font.font("Georgia", FontWeight.BOLD, 17));
         demoTitle.setTextFill(Color.WHITE);
@@ -58,10 +62,9 @@ public class HomeView extends Application {
             "-fx-background-radius: 8;" +
             "-fx-cursor: hand;"
         );
-        demoButton.setOnAction(e -> {
-            new ScenarioSelectorView().start(stage);
-        });
-        // Config button
+        demoButton.setOnAction(e -> new ScenarioSelectorView().start(stage));
+
+        // ── Config button ─────────────────────────────────────────────────────
         Label configTitle = new Label("Configuration");
         configTitle.setFont(Font.font("Georgia", FontWeight.BOLD, 17));
         configTitle.setTextFill(Color.web("#e0e0e0"));
@@ -83,10 +86,9 @@ public class HomeView extends Application {
             "-fx-border-radius: 8;" +
             "-fx-cursor: hand;"
         );
-        configButton.setOnAction(e -> {
-            new ConfigView().start(stage);
-        });
+        configButton.setOnAction(e -> new ConfigView().start(stage));
 
+        // ── Layout ────────────────────────────────────────────────────────────
         HBox buttons = new HBox(24, demoButton, configButton);
         buttons.setAlignment(Pos.CENTER);
 
@@ -95,18 +97,23 @@ public class HomeView extends Application {
         root.setStyle("-fx-background-color: #424242;");
 
         Scene scene = new Scene(root);
-
         stage.setTitle("EXIT");
 
-        // taille unique de toute l'application
-        stage.setWidth(1200);
-        stage.setHeight(800);
+        // Set initial window size only on first launch.
+        // When navigating back from another view the stage is already showing,
+        // so we skip this to avoid resetting the window dimensions (KAN-39).
+        if (!stage.isShowing()) {
+            stage.setWidth(1200);
+            stage.setHeight(800);
+        }
+
         stage.setScene(scene);
         stage.show();
     }
 
     /**
      * Launches the JavaFX application.
+     *
      * @param args command-line arguments (not used)
      */
     public static void main(String[] args) {
