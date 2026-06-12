@@ -20,6 +20,7 @@ import javafx.geometry.Pos;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import java.util.List;
+import javafx.scene.layout.Priority;
 
 /**
  * Main JavaFX view of the EXIT application.
@@ -258,11 +259,19 @@ public class MainView extends Application {
         toolbar.setAlignment(Pos.CENTER_LEFT);
         toolbar.setStyle("-fx-background-color: #303030;");
 
+        statsPanel.setMinWidth(200);
+
         HBox mainContent = new HBox(canvas, statsPanel);
-        VBox root        = new VBox(toolbar, mainContent);
+
+        // 2. On dit au canvas de prendre tout l'espace libre disponible,
+        // ce qui repoussera mécaniquement statsPanel tout à droite.
+        HBox.setHgrow(canvas, Priority.ALWAYS);
+
+        VBox root = new VBox(toolbar, mainContent);
         root.setStyle("-fx-background-color: #424242;");
 
         Scene scene = new Scene(root, 910, 610);
+
         stage.setTitle("EXIT — Simulation");
         stage.setScene(scene);
         stage.show();
