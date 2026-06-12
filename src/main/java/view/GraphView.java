@@ -218,273 +218,6 @@ public class GraphView {
         });
     }
 
-    /**
-     * Converts a screen X coordinate (pixel space) into a world X coordinate
-     * based on the current camera offset and zoom level.
-     * @param screenX the X coordinate in screen space (pixels)
-     * @return the corresponding X coordinate in world space
-     */
-    private double toWorldX(double screenX) { return (screenX - offsetX) / zoom; }
-
-    /**
-     * Converts a screen Y coordinate (pixel space) into a world Y coordinate
-     * based on the current camera offset and zoom level.
-     * @param screenY the Y coordinate in screen space (pixels)
-     * @return the corresponding Y coordinate in world space
-     */
-    private double toWorldY(double screenY) { return (screenY - offsetY) / zoom; }
-
-    /**
-     * Checks whether a given point in world coordinates is inside the bounding box of a node.
-     * @param node the node to test against
-     * @param x the X coordinate in world space
-     * @param y the Y coordinate in world space
-     * @return true if the point lies within the node's bounds, false otherwise
-     */
-    private boolean hitNode(Node node, double x, double y) {
-        return x >= node.getX() && x <= node.getX() + 120
-            && y >= node.getY() && y <= node.getY() + 60;
-    }
-
-    /**
-     * Determines whether a point in world coordinates is close enough to an edge
-     * to be considered as "hitting" it.
-     * @param edge the edge to test against
-     * @param mx the X coordinate of the mouse in world space
-     * @param my the Y coordinate of the mouse in world space
-     * @return true if the point is within interaction range of the edge, false otherwise
-     */
-    private boolean hitEdge(Edge edge, double mx, double my) {
-        double x1   = edge.getSource().getX() + 60;
-        double y1   = edge.getSource().getY() + 30;
-        double x2   = edge.getTarget().getX() + 60;
-        double y2   = edge.getTarget().getY() + 30;
-        double len2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
-        if (len2 == 0) return false;
-        double t  = Math.max(0, Math.min(1, ((mx - x1) * (x2 - x1) + (my - y1) * (y2 - y1)) / len2));
-        double px = x1 + t * (x2 - x1);
-        double py = y1 + t * (y2 - y1);
-        return Math.sqrt((mx - px) * (mx - px) + (my - py) * (my - py)) < 8;
-    }
-
-    /**
-     * Sets the simulation engine used by this view and synchronizes the local
-     * agent list with the engine's current state.
-     * @param engine the simulation engine to attach to this view
-     */
-    public void setEngine(SimulationEngine engine) {
-        this.engine = engine;
-        this.agents = new ArrayList<>(engine.getAgents());
-    }
-
-    /**
-     * Opens a modal dialog allowing the user to spawn a new agent at the currently
-     * selected node, or at the first available ROOM node if none is selected.
-     */
-    public void spawnAgentAtRoom() {
-        Node target = selectedNode;
-        if (target == null) {
-            for (Node node : nodes) {
-                if (node.getType() == NodeType.ROOM) { target = node; break; }
-            }
-        }
-        if (target == null) return;
-        final Node finalTarget = target;
-        Stage popup = new Stage();
-        popup.initModality(Modality.APPLICATION_MODAL);
-        popup.setTitle("Nouvel Agent");
-        ComboBox<AgentState>    stateBox    = new ComboBox<>();
-        ComboBox<AgentBehavior> behaviorBox = new ComboBox<>();
-        ComboBox<AgentType>     typeBox     = new ComboBox<>();
-        stateBox.getItems().addAll(AgentState.values());    stateBox.setValue(AgentState.CALM);
-        behaviorBox.getItems().addAll(AgentBehavior.values()); behaviorBox.setValue(AgentBehavior.COOPERATIVE);
-        typeBox.getItems().addAll(AgentType.values());      typeBox.setValue(AgentType.ADULT);
-        Button createButton = new Button("Créer");
-        createButton.setOnAction(e -> {
-            Agent agent = new Agent(
-                "agent" + System.currentTimeMillis(), finalTarget, 1.0f,
-                stateBox.getValue(), behaviorBox.getValue(), typeBox.getValue(),
-                0.5f, graph
-            );
-            agents.add(agent);
-            if (engine != null) engine.addAgent(agent);
-            drawGraph();
-            popup.close();
-        });
-        VBox layout = new VBox(10,
-            new Label("État"),         stateBox,
-            new Label("Comportement"), behaviorBox,
-            new Label("Type"),         typeBox,
-            createButton
-        );
-        layout.setStyle("-fx-padding: 10;");
-        popup.setScene(new Scene(layout, 250, 250));
-        popup.showAndWait();
-    }
-
-    /**
-     * Opens a modal dialog to create a new ROOM node at the last clicked position
-     * on the canvas.
-     */
-    public void addRoomNode() {
-        String id = "N" + (nodeCounter + 1);
-        Stage popup = new Stage();
-        popup.initModality(Modality.APPLICATION_MODAL);
-        popup.setTitle("Nouveau nœud");
-        TextField nameField         = new TextField("Room " + (nodeCounter + 1));
-        TextField capacityField     = new TextField("10");
-        TextField attractivenessField = new TextField("1.0");
-        ComboBox<NodeType>   typeBox   = new ComboBox<>();
-        ComboBox<NodeStatus> statusBox = new ComboBox<>();
-        typeBox.getItems().addAll(NodeType.values());     typeBox.setValue(NodeType.ROOM);
-        statusBox.getItems().addAll(NodeStatus.values()); statusBox.setValue(NodeStatus.OPEN);
-        Label errorLabel = new Label();
-        errorLabel.setStyle("-fx-text-fill: #ff6b6b;");
-        Button createButton = new Button("Créer");
-        createButton.setOnAction(e -> {
-            try {
-                int    capacity      = Integer.parseInt(capacityField.getText().trim());
-                float  attractiveness = Float.parseFloat(attractivenessField.getText().trim());
-                String name          = nameField.getText().trim();
-                if (name.isEmpty())    { errorLabel.setText("Le nom est requis.");           return; }
-                if (capacity <= 0)     { errorLabel.setText("La capacité doit être > 0.");   return; } // #11
-                if (attractiveness <= 0) { errorLabel.setText("L'attractivité doit être > 0."); return; }
-                Node newNode = new Node(
-                    id, name, lastClickX - 60, lastClickY - 30,
-                    capacity, statusBox.getValue(), typeBox.getValue(), attractiveness
-                );
-                nodes.add(newNode);
-                graph.addNode(newNode);
-                nodeCounter++;
-                drawGraph();
-                popup.close();
-            } catch (NumberFormatException ex) {
-                errorLabel.setText("Valeurs invalides — entrez des nombres."); // #7
-            }
-        });
-        VBox layout = new VBox(10,
-            new Label("Nom"),         nameField,
-            new Label("Type"),        typeBox,
-            new Label("Statut"),      statusBox,
-            new Label("Capacité"),    capacityField,
-            new Label("Attractivité"), attractivenessField,
-            createButton, errorLabel
-        );
-        layout.setStyle("-fx-padding: 10;");
-        popup.setScene(new Scene(layout, 300, 370));
-        popup.showAndWait();
-    }
-
-    /**
-     * Activates edge creation mode starting from the currently selected node.
-     */
-    public void startAddEdge() {
-        if (selectedNode == null) return;
-        connectMode   = true;
-        connectSource = selectedNode;
-        drawGraph();
-    }
-
-    /**
-     * Checks whether an agent's current planned path uses a given edge between two nodes.
-      * @param agent the agent whose path is being analyzed
-     * @param src one endpoint of the edge
-     * @param tgt the other endpoint of the edge
-     * @return true if the agent's path uses the edge, false otherwise
-     */
-    private boolean pathUsesEdge(Agent agent, Node src, Node tgt) {
-        List<Node> path = agent.getCurrentPath();
-        if (path == null || path.isEmpty()) return false;
-        Node current = agent.getCurrentNode();
-        if (current != null) {
-            Node next = path.get(0);
-            if ((current.equals(src) && next.equals(tgt)) ||
-                (current.equals(tgt) && next.equals(src))) return true;
-        }
-        for (int i = 0; i < path.size() - 1; i++) {
-            if ((path.get(i).equals(src) && path.get(i + 1).equals(tgt)) ||
-                (path.get(i).equals(tgt) && path.get(i + 1).equals(src))) return true;
-        }
-        return false;
-    }
-
-    /** Removes the currently selected element (node, edge or agent) */
-    public void removeSelectedNode() {
-        if (selectedAgent != null) {
-            agents.remove(selectedAgent);
-            if (engine != null) engine.removeAgent(selectedAgent);
-            selectedAgent = null;
-            drawGraph();
-            return;
-        }
-        if (selectedEdge != null) {
-            Node edgeSource = selectedEdge.getSource();
-            Node edgeTarget = selectedEdge.getTarget();
-
-            List<Agent> agentsOnEdge = new ArrayList<>(selectedEdge.getAgents());
-
-            List<Agent> allAgents = (engine != null) ? engine.getAgents() : agents;
-            List<Agent> agentsToReroute = new ArrayList<>();
-            for (Agent agent : allAgents) {
-                if (pathUsesEdge(agent, edgeSource, edgeTarget)) agentsToReroute.add(agent);
-            }
-            // Supprimer EN PREMIER pour que Dijkstra ne réutilise pas l'arête supprimée
-            edges.remove(selectedEdge);
-            graph.removeEdge(selectedEdge.getId());
-
-            Pathfinder pf = new Pathfinder();
-
-            for (Agent agent : agentsOnEdge) {
-                agent.arriveAt(edgeSource);
-                if (agent.getDestinationNode() != null) {
-                    List<Node> newPath = pf.dijkstraTime(edgeSource, agent.getDestinationNode(), graph);
-                    if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
-                    agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
-                }
-            }
-            for (Agent agent : agentsToReroute) {
-                Node currentNode = agent.getCurrentNode();
-                if (currentNode != null && agent.getDestinationNode() != null) {
-                    List<Node> newPath = pf.dijkstraTime(currentNode, agent.getDestinationNode(), graph);
-                    if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
-                    agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
-                }
-            }
-            selectedEdge = null;
-            drawGraph();
-            return;
-        }
-        if (selectedNode == null) return;
-
-        // KAN-13 : déplacer les agents vers un voisin avant suppression
-        List<Node> neighbors = graph.getNeighbors(selectedNode);
-        Pathfinder pf = new Pathfinder();
-
-        for (Agent a : new ArrayList<>(agents)) {
-            if (selectedNode.equals(a.getCurrentNode())) {
-                if (!neighbors.isEmpty()) {
-                    Node fallback = neighbors.get(0);
-                    selectedNode.removeAgent(a);
-                    a.arriveAt(fallback);
-                    if (a.getDestinationNode() != null) {
-                        List<Node> newPath = pf.dijkstraTime(fallback, a.getDestinationNode(), graph);
-                        if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
-                        a.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
-                    }
-                } else {
-                    if (engine != null) engine.removeAgent(a);
-                    agents.remove(a);
-                }
-            }
-        }
-
-        edges.removeIf(e -> e.getSource().equals(selectedNode) || e.getTarget().equals(selectedNode));
-        graph.removeNode(selectedNode.getId());
-        nodes.remove(selectedNode);
-        selectedNode = null;
-        drawGraph();
-    }
-
     /** Renders the entire graph onto the canvas. */
     public void drawGraph() {
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
@@ -662,6 +395,280 @@ public class GraphView {
         }
     }
 
+
+    /**
+     * Sets the simulation engine used by this view and synchronizes the local
+     * agent list with the engine's current state.
+     * @param engine the simulation engine to attach to this view
+     */
+    public void setEngine(SimulationEngine engine) {
+        this.engine = engine;
+        this.agents = new ArrayList<>(engine.getAgents());
+    }
+
+    /**
+     * Opens a modal dialog allowing the user to spawn a new agent at the currently
+     * selected node, or at the first available ROOM node if none is selected.
+     */
+    public void spawnAgentAtRoom() {
+        Node target = selectedNode;
+        if (target == null) {
+            for (Node node : nodes) {
+                if (node.getType() == NodeType.ROOM) { target = node; break; }
+            }
+        }
+        if (target == null) return;
+        final Node finalTarget = target;
+        Stage popup = new Stage();
+        popup.initModality(Modality.APPLICATION_MODAL);
+        popup.setTitle("Nouvel Agent");
+        ComboBox<AgentState>    stateBox    = new ComboBox<>();
+        ComboBox<AgentBehavior> behaviorBox = new ComboBox<>();
+        ComboBox<AgentType>     typeBox     = new ComboBox<>();
+        stateBox.getItems().addAll(AgentState.values());    stateBox.setValue(AgentState.CALM);
+        behaviorBox.getItems().addAll(AgentBehavior.values()); behaviorBox.setValue(AgentBehavior.COOPERATIVE);
+        typeBox.getItems().addAll(AgentType.values());      typeBox.setValue(AgentType.ADULT);
+        Button createButton = new Button("Créer");
+        createButton.setOnAction(e -> {
+            Agent agent = new Agent(
+                "agent" + System.currentTimeMillis(), finalTarget, 1.0f,
+                stateBox.getValue(), behaviorBox.getValue(), typeBox.getValue(),
+                0.5f, graph
+            );
+            agents.add(agent);
+            if (engine != null) engine.addAgent(agent);
+            drawGraph();
+            popup.close();
+        });
+        VBox layout = new VBox(10,
+            new Label("État"),         stateBox,
+            new Label("Comportement"), behaviorBox,
+            new Label("Type"),         typeBox,
+            createButton
+        );
+        layout.setStyle("-fx-padding: 10;");
+        popup.setScene(new Scene(layout, 250, 250));
+        popup.showAndWait();
+    }
+
+    /**
+     * Opens a modal dialog to create a new ROOM node at the last clicked position
+     * on the canvas.
+     */
+    public void addRoomNode() {
+        String id = "N" + (nodeCounter + 1);
+        Stage popup = new Stage();
+        popup.initModality(Modality.APPLICATION_MODAL);
+        popup.setTitle("Nouveau nœud");
+        TextField nameField         = new TextField("Room " + (nodeCounter + 1));
+        TextField capacityField     = new TextField("10");
+        TextField attractivenessField = new TextField("1.0");
+        ComboBox<NodeType>   typeBox   = new ComboBox<>();
+        ComboBox<NodeStatus> statusBox = new ComboBox<>();
+        typeBox.getItems().addAll(NodeType.values());     typeBox.setValue(NodeType.ROOM);
+        statusBox.getItems().addAll(NodeStatus.values()); statusBox.setValue(NodeStatus.OPEN);
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: #ff6b6b;");
+        Button createButton = new Button("Créer");
+        createButton.setOnAction(e -> {
+            try {
+                int    capacity      = Integer.parseInt(capacityField.getText().trim());
+                float  attractiveness = Float.parseFloat(attractivenessField.getText().trim());
+                String name          = nameField.getText().trim();
+                if (name.isEmpty())    { errorLabel.setText("Le nom est requis.");           return; }
+                if (capacity <= 0)     { errorLabel.setText("La capacité doit être > 0.");   return; } // #11
+                if (attractiveness <= 0) { errorLabel.setText("L'attractivité doit être > 0."); return; }
+                Node newNode = new Node(
+                    id, name, lastClickX - 60, lastClickY - 30,
+                    capacity, statusBox.getValue(), typeBox.getValue(), attractiveness
+                );
+                nodes.add(newNode);
+                graph.addNode(newNode);
+                nodeCounter++;
+                drawGraph();
+                popup.close();
+            } catch (NumberFormatException ex) {
+                errorLabel.setText("Valeurs invalides — entrez des nombres."); // #7
+            }
+        });
+        VBox layout = new VBox(10,
+            new Label("Nom"),         nameField,
+            new Label("Type"),        typeBox,
+            new Label("Statut"),      statusBox,
+            new Label("Capacité"),    capacityField,
+            new Label("Attractivité"), attractivenessField,
+            createButton, errorLabel
+        );
+        layout.setStyle("-fx-padding: 10;");
+        popup.setScene(new Scene(layout, 300, 370));
+        popup.showAndWait();
+    }
+
+    /**
+     * Activates edge creation mode starting from the currently selected node.
+     */
+    public void startAddEdge() {
+        if (selectedNode == null) return;
+        connectMode   = true;
+        connectSource = selectedNode;
+        drawGraph();
+    }
+
+    /** Removes the currently selected element (node, edge or agent) */
+    public void removeSelectedNode() {
+        if (selectedAgent != null) {
+            agents.remove(selectedAgent);
+            if (engine != null) engine.removeAgent(selectedAgent);
+            selectedAgent = null;
+            drawGraph();
+            return;
+        }
+        if (selectedEdge != null) {
+            Node edgeSource = selectedEdge.getSource();
+            Node edgeTarget = selectedEdge.getTarget();
+
+            List<Agent> agentsOnEdge = new ArrayList<>(selectedEdge.getAgents());
+
+            List<Agent> allAgents = (engine != null) ? engine.getAgents() : agents;
+            List<Agent> agentsToReroute = new ArrayList<>();
+            for (Agent agent : allAgents) {
+                if (pathUsesEdge(agent, edgeSource, edgeTarget)) agentsToReroute.add(agent);
+            }
+            // Supprimer EN PREMIER pour que Dijkstra ne réutilise pas l'arête supprimée
+            edges.remove(selectedEdge);
+            graph.removeEdge(selectedEdge.getId());
+
+            Pathfinder pf = new Pathfinder();
+
+            for (Agent agent : agentsOnEdge) {
+                agent.arriveAt(edgeSource);
+                if (agent.getDestinationNode() != null) {
+                    List<Node> newPath = pf.dijkstraTime(edgeSource, agent.getDestinationNode(), graph);
+                    if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
+                    agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
+                }
+            }
+            for (Agent agent : agentsToReroute) {
+                Node currentNode = agent.getCurrentNode();
+                if (currentNode != null && agent.getDestinationNode() != null) {
+                    List<Node> newPath = pf.dijkstraTime(currentNode, agent.getDestinationNode(), graph);
+                    if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
+                    agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
+                }
+            }
+            selectedEdge = null;
+            drawGraph();
+            return;
+        }
+        if (selectedNode == null) return;
+
+        // KAN-13 : déplacer les agents vers un voisin avant suppression
+        List<Node> neighbors = graph.getNeighbors(selectedNode);
+        Pathfinder pf = new Pathfinder();
+
+        for (Agent a : new ArrayList<>(agents)) {
+            if (selectedNode.equals(a.getCurrentNode())) {
+                if (!neighbors.isEmpty()) {
+                    Node fallback = neighbors.get(0);
+                    selectedNode.removeAgent(a);
+                    a.arriveAt(fallback);
+                    if (a.getDestinationNode() != null) {
+                        List<Node> newPath = pf.dijkstraTime(fallback, a.getDestinationNode(), graph);
+                        if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
+                        a.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
+                    }
+                } else {
+                    if (engine != null) engine.removeAgent(a);
+                    agents.remove(a);
+                }
+            }
+        }
+
+        edges.removeIf(e -> e.getSource().equals(selectedNode) || e.getTarget().equals(selectedNode));
+        graph.removeNode(selectedNode.getId());
+        nodes.remove(selectedNode);
+        selectedNode = null;
+        drawGraph();
+    }
+
+    public void removeAgent(Agent agent) { agents.remove(agent); }
+    public Graph getGraph()              { return graph; }
+    public List<Agent> getAgents()       { return agents; }
+
+
+    /**
+     * Converts a screen X coordinate (pixel space) into a world X coordinate
+     * based on the current camera offset and zoom level.
+     * @param screenX the X coordinate in screen space (pixels)
+     * @return the corresponding X coordinate in world space
+     */
+    private double toWorldX(double screenX) { return (screenX - offsetX) / zoom; }
+
+    /**
+     * Converts a screen Y coordinate (pixel space) into a world Y coordinate
+     * based on the current camera offset and zoom level.
+     * @param screenY the Y coordinate in screen space (pixels)
+     * @return the corresponding Y coordinate in world space
+     */
+    private double toWorldY(double screenY) { return (screenY - offsetY) / zoom; }
+
+    /**
+     * Checks whether a given point in world coordinates is inside the bounding box of a node.
+     * @param node the node to test against
+     * @param x the X coordinate in world space
+     * @param y the Y coordinate in world space
+     * @return true if the point lies within the node's bounds, false otherwise
+     */
+    private boolean hitNode(Node node, double x, double y) {
+        return x >= node.getX() && x <= node.getX() + 120
+            && y >= node.getY() && y <= node.getY() + 60;
+    }
+
+    /**
+     * Determines whether a point in world coordinates is close enough to an edge
+     * to be considered as "hitting" it.
+     * @param edge the edge to test against
+     * @param mx the X coordinate of the mouse in world space
+     * @param my the Y coordinate of the mouse in world space
+     * @return true if the point is within interaction range of the edge, false otherwise
+     */
+    private boolean hitEdge(Edge edge, double mx, double my) {
+        double x1   = edge.getSource().getX() + 60;
+        double y1   = edge.getSource().getY() + 30;
+        double x2   = edge.getTarget().getX() + 60;
+        double y2   = edge.getTarget().getY() + 30;
+        double len2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+        if (len2 == 0) return false;
+        double t  = Math.max(0, Math.min(1, ((mx - x1) * (x2 - x1) + (my - y1) * (y2 - y1)) / len2));
+        double px = x1 + t * (x2 - x1);
+        double py = y1 + t * (y2 - y1);
+        return Math.sqrt((mx - px) * (mx - px) + (my - py) * (my - py)) < 8;
+    }
+
+    /**
+     * Checks whether an agent's current planned path uses a given edge between two nodes.
+      * @param agent the agent whose path is being analyzed
+     * @param src one endpoint of the edge
+     * @param tgt the other endpoint of the edge
+     * @return true if the agent's path uses the edge, false otherwise
+     */
+    private boolean pathUsesEdge(Agent agent, Node src, Node tgt) {
+        List<Node> path = agent.getCurrentPath();
+        if (path == null || path.isEmpty()) return false;
+        Node current = agent.getCurrentNode();
+        if (current != null) {
+            Node next = path.get(0);
+            if ((current.equals(src) && next.equals(tgt)) ||
+                (current.equals(tgt) && next.equals(src))) return true;
+        }
+        for (int i = 0; i < path.size() - 1; i++) {
+            if ((path.get(i).equals(src) && path.get(i + 1).equals(tgt)) ||
+                (path.get(i).equals(tgt) && path.get(i + 1).equals(src))) return true;
+        }
+        return false;
+    }
+
+
     /**
      * Returns the display color associated with an agent's current state.
      * @param agent the agent whose state is used to determine the color
@@ -676,7 +683,4 @@ public class GraphView {
         }
     }
 
-    public void removeAgent(Agent agent) { agents.remove(agent); }
-    public Graph getGraph()              { return graph; }
-    public List<Agent> getAgents()       { return agents; }
 }
