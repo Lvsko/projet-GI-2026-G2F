@@ -263,8 +263,6 @@ public class MainView extends Application {
 
         HBox mainContent = new HBox(canvas, statsPanel);
 
-        // 2. On dit au canvas de prendre tout l'espace libre disponible,
-        // ce qui repoussera mécaniquement statsPanel tout à droite.
         HBox.setHgrow(canvas, Priority.ALWAYS);
 
         VBox root = new VBox(toolbar, mainContent);
