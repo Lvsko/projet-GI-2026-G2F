@@ -148,6 +148,23 @@ public class SimulationController {
         graph.removeEdge(id);
     }
 
+    /**
+     * Removes an agent
+     * @param agent the agent  to remove
+     */
+    public void removeAgent(Agent agent) {
+        if (engine != null) {
+            engine.removeAgent(agent);
+         } else {
+            if (agent.getCurrentNode() != null) {
+                agent.getCurrentNode().removeAgent(agent);
+            }
+            if (agent.getCurrentEdge() != null) {
+                agent.getCurrentEdge().removeAgent(agent);
+            }    
+        }
+    }
+
     // Save / Load (from ConfigView) 
 
     /**
