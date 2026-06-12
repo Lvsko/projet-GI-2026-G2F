@@ -41,13 +41,16 @@ import java.util.Optional;
  * JavaFX view for manually configuring a building graph before launching the simulation.
  * Allows adding nodes, edges and agents, saving/loading plans, generating random graphs,
  * and undoing/redoing changes via Ctrl+Z / Ctrl+Y.
+ *
  * @author Ruben
  */
 public class ConfigView {
+
     private Graph graph;
     private GraphView preview;
     private Canvas previewCanvas;
     private List<Agent> agents = new ArrayList<>();
+    private SimulationController controller;
     private final ArrayDeque<Graph> undoStack = new ArrayDeque<>();
     private final ArrayDeque<Graph> redoStack = new ArrayDeque<>();
 
@@ -56,23 +59,24 @@ public class ConfigView {
     }
 
     /**
-     * Creates a deep copy of the given graph via serialization.
-     * @param g he graph to duplicate
-     * @return a deep copy of the graph, or the original graph if copying fails
+     * Creates a deep copy of the given graph via Java serialization.
+     *
+     * @param g the graph to duplicate
+     * @return a deep copy of the graph, or the original if copying fails
      */
     private Graph deepCopy(Graph g) {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             new ObjectOutputStream(bos).writeObject(g);
-            return (Graph) new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray())).readObject();
+            return (Graph) new ObjectInputStream(
+                new ByteArrayInputStream(bos.toByteArray())).readObject();
         } catch (Exception e) {
             return g;
         }
     }
 
-    
     /**
-     * Saves the current state of the graph into the undo stack.
+     * Saves the current graph state onto the undo stack and clears the redo stack.
      */
     private void saveState() {
         undoStack.push(deepCopy(graph));
@@ -80,7 +84,7 @@ public class ConfigView {
     }
 
     /**
-     * Restores the previous state of the graph from the undo stack.
+     * Restores the previous graph state from the undo stack.
      */
     private void undo() {
         if (!undoStack.isEmpty()) {
@@ -92,7 +96,7 @@ public class ConfigView {
     }
 
     /**
-     * Restores the next state of the graph from the redo stack.
+     * Restores the next graph state from the redo stack.
      */
     private void redo() {
         if (!redoStack.isEmpty()) {
@@ -105,8 +109,9 @@ public class ConfigView {
 
     /**
      * Applies a dark theme style to a JavaFX ComboBox.
+     *
      * @param combo the ComboBox to style
-     * @param <T> the type of items contained in the ComboBox
+     * @param <T>   the type of items contained in the ComboBox
      */
     private <T> void darkCombo(ComboBox<T> combo) {
         combo.setStyle("-fx-background-color: #303030; -fx-border-color: #616161; -fx-border-radius: 4;");
@@ -127,33 +132,35 @@ public class ConfigView {
     /**
      * Initializes and displays the JavaFX configuration window for building a graph
      * and setting up a simulation.
+     *
      * @param stage the primary JavaFX stage used to display the configuration window
      */
     public void start(Stage stage) {
         controller = new SimulationController(graph, stage);
         stage.setTitle("Configure Graph");
 
-        String labelStyle    = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial;";
-        String titleStyle    = "-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 14;";
-        String fieldStyle    = "-fx-background-color: #303030; -fx-text-fill: #e0e0e0; -fx-border-color: #616161; -fx-border-radius: 4;";
-        String btnPrimary    = "-fx-background-color: #2E7D32; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 6 14 6 14;";
-        String btnSecondary  = "-fx-background-color: #424242; -fx-text-fill: #e0e0e0; -fx-background-radius: 6; -fx-cursor: hand; -fx-border-color: #616161; -fx-border-radius: 6; -fx-padding: 6 14 6 14;";
+        String labelStyle   = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial;";
+        String titleStyle   = "-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 14;";
+        String fieldStyle   = "-fx-background-color: #303030; -fx-text-fill: #e0e0e0; -fx-border-color: #616161; -fx-border-radius: 4;";
+        String btnPrimary   = "-fx-background-color: #2E7D32; -fx-text-fill: white; -fx-background-radius: 6; -fx-cursor: hand; -fx-padding: 6 14 6 14;";
+        String btnSecondary = "-fx-background-color: #424242; -fx-text-fill: #e0e0e0; -fx-background-radius: 6; -fx-cursor: hand; -fx-border-color: #616161; -fx-border-radius: 6; -fx-padding: 6 14 6 14;";
 
         VBox form = new VBox(15);
         form.setPadding(new Insets(15));
         form.setPrefWidth(420);
         form.setStyle("-fx-background-color: #424242;");
 
-        // --- UNDO / REDO ---
+        // ── Undo / Redo ──────────────────────────────────────────────────────────
         Button undoBtn = new Button("Undo"); undoBtn.setStyle(btnSecondary);
         Button redoBtn = new Button("Redo"); redoBtn.setStyle(btnSecondary);
         undoBtn.setOnAction(e -> undo());
         redoBtn.setOnAction(e -> redo());
         HBox undoRedoBox = new HBox(10, undoBtn, redoBtn);
 
-        // --- ADD NODE ---
+        // ── Add Node ─────────────────────────────────────────────────────────────
         Label nodeTitle = new Label("Add Node");
         nodeTitle.setStyle(titleStyle);
+
         GridPane nodeGrid = new GridPane();
         nodeGrid.setHgap(10); nodeGrid.setVgap(8);
 
@@ -194,11 +201,9 @@ public class ConfigView {
                 double x      = Double.parseDouble(nodeX.getText().trim());
                 double y      = Double.parseDouble(nodeY.getText().trim());
                 NodeType type = nodeType.getValue();
-
-                if (id.isEmpty() || name.isEmpty()) { nodeStatus.setText("Erreur : ID et nom requis.");           return; }
-                if (graph.getNode(id) != null)       { nodeStatus.setText("Erreur : ID déjà utilisé.");           return; }
-                if (capacity <= 0)                   { nodeStatus.setText("Erreur : capacité doit être > 0.");    return; } // #11
-
+                if (id.isEmpty() || name.isEmpty()) { nodeStatus.setText("Erreur : ID et nom requis.");        return; }
+                if (graph.getNode(id) != null)       { nodeStatus.setText("Erreur : ID déjà utilisé.");        return; }
+                if (capacity <= 0)                   { nodeStatus.setText("Erreur : capacité doit être > 0."); return; }
                 saveState();
                 graph.addNode(new Node(id, name, x, y, capacity, NodeStatus.OPEN, type, 1.0f));
                 nodeStatus.setText("Nœud '" + name + "' ajouté.");
@@ -209,9 +214,10 @@ public class ConfigView {
             }
         });
 
-        // --- ADD EDGE ---
+        // ── Add Edge ─────────────────────────────────────────────────────────────
         Label edgeTitle = new Label("Add Edge");
         edgeTitle.setStyle(titleStyle);
+
         GridPane edgeGrid = new GridPane();
         edgeGrid.setHgap(10); edgeGrid.setVgap(8);
 
@@ -226,11 +232,11 @@ public class ConfigView {
         edgeWidth.setStyle(fieldStyle); edgeDistance.setStyle(fieldStyle);
         edgeDirected.setStyle(labelStyle);
 
-        Label lId2   = new Label("ID:");       lId2.setStyle(labelStyle);
-        Label lSrc   = new Label("Source:");   lSrc.setStyle(labelStyle);
-        Label lTgt   = new Label("Target:");   lTgt.setStyle(labelStyle);
-        Label lW     = new Label("Width:");    lW.setStyle(labelStyle);
-        Label lDist  = new Label("Distance:"); lDist.setStyle(labelStyle);
+        Label lId2  = new Label("ID:");       lId2.setStyle(labelStyle);
+        Label lSrc  = new Label("Source:");   lSrc.setStyle(labelStyle);
+        Label lTgt  = new Label("Target:");   lTgt.setStyle(labelStyle);
+        Label lW    = new Label("Width:");    lW.setStyle(labelStyle);
+        Label lDist = new Label("Distance:"); lDist.setStyle(labelStyle);
 
         edgeGrid.add(lId2,  0, 0); edgeGrid.add(edgeId,       1, 0);
         edgeGrid.add(lSrc,  0, 1); edgeGrid.add(edgeSource,   1, 1);
@@ -249,15 +255,12 @@ public class ConfigView {
                 int    width    = Integer.parseInt(edgeWidth.getText().trim());
                 float  distance = Float.parseFloat(edgeDistance.getText().trim());
                 boolean directed = edgeDirected.isSelected();
-
                 Node source = graph.getNode(sourceId);
                 Node target = graph.getNode(targetId);
-
-                if (source == null || target == null) { edgeStatus.setText("Erreur : nœud source ou cible introuvable."); return; }
-                if (source.equals(target))             { edgeStatus.setText("Erreur : source et cible doivent être différents."); return; } // #9
-                if (width <= 0)                        { edgeStatus.setText("Erreur : largeur doit être > 0.");    return; }               // #6
-                if (distance <= 0)                     { edgeStatus.setText("Erreur : distance doit être > 0.");   return; }               // #8
-
+                if (source == null || target == null) { edgeStatus.setText("Erreur : nœud source ou cible introuvable.");        return; }
+                if (source.equals(target))             { edgeStatus.setText("Erreur : source et cible doivent être différents."); return; }
+                if (width <= 0)                        { edgeStatus.setText("Erreur : largeur doit être > 0.");                   return; }
+                if (distance <= 0)                     { edgeStatus.setText("Erreur : distance doit être > 0.");                  return; }
                 saveState();
                 graph.addEdge(new Edge(id, source, target, width, distance, 1.0f, directed));
                 edgeStatus.setText("Arête '" + id + "' ajoutée.");
@@ -268,9 +271,10 @@ public class ConfigView {
             }
         });
 
-        // --- ADD AGENTS ---
+        // ── Add Agents ───────────────────────────────────────────────────────────
         Label agentTitle = new Label("Add Agents");
         agentTitle.setStyle(titleStyle);
+
         GridPane agentGrid = new GridPane();
         agentGrid.setHgap(10); agentGrid.setVgap(8);
 
@@ -327,17 +331,16 @@ public class ConfigView {
             }
         });
 
-        // --- SAVE / LOAD ---
+        // ── Save / Load ──────────────────────────────────────────────────────────
         Label saveLoadTitle = new Label("Save / Load Plan");
         saveLoadTitle.setStyle(titleStyle);
-        Label saveLoadStatus = new Label(); saveLoadStatus.setStyle(labelStyle);
 
+        Label saveLoadStatus = new Label(); saveLoadStatus.setStyle(labelStyle);
         Button saveBtn = new Button("💾 Save Plan"); saveBtn.setStyle(btnSecondary);
         saveBtn.setOnAction(e -> {
             controller.savePlan();
             saveLoadStatus.setText("Plan sauvegardé.");
         });
-
         Button loadBtn = new Button("📂 Load Plan"); loadBtn.setStyle(btnSecondary);
         loadBtn.setOnAction(e -> {
             Graph loaded = controller.loadPlan();
@@ -350,7 +353,7 @@ public class ConfigView {
         });
         HBox saveLoadButtons = new HBox(10, saveBtn, loadBtn);
 
-        // --- RANDOM GENERATION (#12 : cap 2–100) ---
+        // ── Random Generation ────────────────────────────────────────────────────
         Button randomBtn = new Button("Random Generation"); randomBtn.setStyle(btnSecondary);
         randomBtn.setOnAction(e -> {
             TextInputDialog dialog = new TextInputDialog("5");
@@ -378,25 +381,21 @@ public class ConfigView {
             });
         });
 
-        // --- LAUNCH (#1 : validation EXIT, #3 : validation agents) ---
+        // ── Launch simulation ────────────────────────────────────────────────────
         Button launchBtn = new Button("▶ Lancer la simulation");
         launchBtn.setStyle(btnPrimary + "-fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 13;");
+        // Validate via controller, then navigate on the same stage (KAN-39)
         launchBtn.setOnAction(e -> {
-            new MainView(graph, agents, "config").start(stage);
             controller.launchSimulation(agents);
             if (controller.getEngine() != null) {
-                stage.close();
-                new MainView(graph, agents, "config").start(new Stage());
+                new MainView(graph, agents, "config").start(stage);
             }
         });
 
-        // --- RETOUR ---
+        // ── Back button ──────────────────────────────────────────────────────────
         Button retourBtn = new Button("← Retour"); retourBtn.setStyle(btnSecondary);
-        retourBtn.setOnAction(e -> {
-            new HomeView().start(stage);
-            stage.close();
-            new HomeView().start(new Stage());
-        });
+        // Reuse the same stage to avoid window size jump on navigation (KAN-39)
+        retourBtn.setOnAction(e -> new HomeView().start(stage));
 
         form.getChildren().addAll(
             undoRedoBox,
@@ -414,7 +413,7 @@ public class ConfigView {
             launchBtn, retourBtn
         );
 
-        // --- PREVIEW ---
+        // ── Preview canvas ───────────────────────────────────────────────────────
         previewCanvas = new Canvas(600, 500);
         preview       = new GraphView(previewCanvas, graph);
 
@@ -431,11 +430,12 @@ public class ConfigView {
         HBox mainLayout = new HBox(10, scrollForm, previewBox);
         mainLayout.setStyle("-fx-background-color: #424242;");
 
+        // No fixed scene size — window keeps its current dimensions on navigation (KAN-39)
         Scene scene = new Scene(mainLayout);
         stage.setScene(scene);
         stage.show();
 
-        // Ctrl+Z / Ctrl+Y — ignorés si un TextField a le focus (#Ctrl+Z bug)
+        // Ctrl+Z / Ctrl+Y — ignored when a TextField has focus
         scene.setOnKeyPressed(e -> {
             if (scene.getFocusOwner() instanceof TextField) return;
             if (e.isControlDown() && e.getCode() == KeyCode.Z) undo();
@@ -446,13 +446,17 @@ public class ConfigView {
     }
 
     /**
-     * Refreshes the graphical preview of the graph.
+     * Recreates the GraphView and redraws the graph preview after any structural change.
      */
     private void refreshPreview() {
         preview = new GraphView(previewCanvas, graph);
         preview.drawGraph();
     }
 
+    /**
+     * Returns the current graph being configured.
+     *
+     * @return the configured {@link Graph}
+     */
     public Graph getGraph() { return graph; }
-    
 }
