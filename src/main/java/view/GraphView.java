@@ -1,5 +1,6 @@
 package view;
 
+import controller.SimulationController;
 import model.Graph;
 import model.node.Node;
 import model.Edge;
@@ -32,6 +33,7 @@ import model.agent.AgentType;
  */
 public class GraphView {
 
+    private SimulationController controller;
     private Canvas canvas;
     private GraphicsContext gc;
     private Graph graph;
@@ -67,10 +69,11 @@ public class GraphView {
      * @param canvas the JavaFX canvas used for rendering the graph
      * @param graph  the underlying graph model to visualize and manipulate
      */
-    public GraphView(Canvas canvas, Graph graph) {
+    public GraphView(Canvas canvas, Graph graph, SimulationController controller) {
         this.canvas = canvas;
         this.gc = canvas.getGraphicsContext2D();
         this.graph = graph;
+        this.controller = controller;
         this.nodes = new ArrayList<>(graph.getNodes());
         this.edges = new ArrayList<>(graph.getEdges());
         this.nodeCounter = nodes.size();
@@ -396,12 +399,11 @@ public class GraphView {
                 if (name.isEmpty())      { errorLabel.setText("Le nom est requis.");             return; }
                 if (capacity <= 0)       { errorLabel.setText("La capacité doit être > 0.");     return; }
                 if (attractiveness <= 0) { errorLabel.setText("L'attractivité doit être > 0."); return; }
-                Node newNode = new Node(
+                Node newNode = controller.addNode(
                     id, name, lastClickX - 60, lastClickY - 30,
                     capacity, statusBox.getValue(), typeBox.getValue(), attractiveness
                 );
                 nodes.add(newNode);
-                graph.addNode(newNode);
                 nodeCounter++;
                 drawGraph();
                 popup.close();
@@ -432,29 +434,6 @@ public class GraphView {
         drawGraph();
     }
 
-    /**
-     * Checks whether an agent's current planned path uses a given edge between two nodes.
-     *
-     * @param agent the agent whose path is being analyzed
-     * @param src   one endpoint of the edge
-     * @param tgt   the other endpoint of the edge
-     * @return {@code true} if the agent's path uses the edge
-     */
-    private boolean pathUsesEdge(Agent agent, Node src, Node tgt) {
-        List<Node> path = agent.getCurrentPath();
-        if (path == null || path.isEmpty()) return false;
-        Node current = agent.getCurrentNode();
-        if (current != null) {
-            Node next = path.get(0);
-            if ((current.equals(src) && next.equals(tgt)) ||
-                (current.equals(tgt) && next.equals(src))) return true;
-        }
-        for (int i = 0; i < path.size() - 1; i++) {
-            if ((path.get(i).equals(src) && path.get(i + 1).equals(tgt)) ||
-                (path.get(i).equals(tgt) && path.get(i + 1).equals(src))) return true;
-        }
-        return false;
-    }
 
     /**
      * Removes the currently selected element (node, edge, or agent).
@@ -473,34 +452,8 @@ public class GraphView {
         }
 
         if (selectedEdge != null) {
-            Node edgeSource = selectedEdge.getSource();
-            Node edgeTarget = selectedEdge.getTarget();
-            List<Agent> agentsOnEdge    = new ArrayList<>(selectedEdge.getAgents());
-            List<Agent> allAgents       = (engine != null) ? engine.getAgents() : agents;
-            List<Agent> agentsToReroute = new ArrayList<>();
-            for (Agent agent : allAgents) {
-                if (pathUsesEdge(agent, edgeSource, edgeTarget)) agentsToReroute.add(agent);
-            }
-            // Remove first so Dijkstra does not re-route through the deleted edge
+            controller.removeEdge(selectedEdge.getId());
             edges.remove(selectedEdge);
-            graph.removeEdge(selectedEdge.getId());
-            Pathfinder pf = new Pathfinder();
-            for (Agent agent : agentsOnEdge) {
-                agent.arriveAt(edgeSource);
-                if (agent.getDestinationNode() != null) {
-                    List<Node> newPath = pf.dijkstraTime(edgeSource, agent.getDestinationNode(), graph);
-                    if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
-                    agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
-                }
-            }
-            for (Agent agent : agentsToReroute) {
-                Node currentNode = agent.getCurrentNode();
-                if (currentNode != null && agent.getDestinationNode() != null) {
-                    List<Node> newPath = pf.dijkstraTime(currentNode, agent.getDestinationNode(), graph);
-                    if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
-                    agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
-                }
-            }
             selectedEdge = null;
             drawGraph();
             if (onSelectionChanged != null) onSelectionChanged.run();
@@ -509,28 +462,8 @@ public class GraphView {
 
         if (selectedNode == null) return;
 
-        // Relocate agents to a neighbour before deletion
-        List<Node> neighbors = graph.getNeighbors(selectedNode);
-        Pathfinder pf = new Pathfinder();
-        for (Agent a : new ArrayList<>(agents)) {
-            if (selectedNode.equals(a.getCurrentNode())) {
-                if (!neighbors.isEmpty()) {
-                    Node fallback = neighbors.get(0);
-                    selectedNode.removeAgent(a);
-                    a.arriveAt(fallback);
-                    if (a.getDestinationNode() != null) {
-                        List<Node> newPath = pf.dijkstraTime(fallback, a.getDestinationNode(), graph);
-                        if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
-                        a.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
-                    }
-                } else {
-                    if (engine != null) engine.removeAgent(a);
-                    agents.remove(a);
-                }
-            }
-        }
+        controller.removeNode(selectedNode.getId());
         edges.removeIf(e -> e.getSource().equals(selectedNode) || e.getTarget().equals(selectedNode));
-        graph.removeNode(selectedNode.getId());
         nodes.remove(selectedNode);
         selectedNode = null;
         drawGraph();
