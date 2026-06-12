@@ -53,9 +53,7 @@ public class HomeView extends Application {
             "-fx-cursor: hand;"
         );
         demoButton.setOnAction(e -> {
-            stage.close();
-            Stage selectorStage = new Stage();
-            new ScenarioSelectorView().start(selectorStage);
+            new ScenarioSelectorView().start(stage);
         });
         // Config button
         Label configTitle = new Label("Configuration");
@@ -80,9 +78,7 @@ public class HomeView extends Application {
             "-fx-cursor: hand;"
         );
         configButton.setOnAction(e -> {
-            stage.close();
-            Stage configStage = new Stage();
-            new ConfigView().start(configStage);
+            new ConfigView().start(stage);
         });
 
         HBox buttons = new HBox(24, demoButton, configButton);
@@ -92,8 +88,13 @@ public class HomeView extends Application {
         root.setAlignment(Pos.CENTER);
         root.setStyle("-fx-background-color: #424242;");
 
-        Scene scene = new Scene(root, 600, 350);
+        Scene scene = new Scene(root);
+
         stage.setTitle("EXIT");
+
+        // taille unique de toute l'application
+        stage.setWidth(1200);
+        stage.setHeight(800);
         stage.setScene(scene);
         stage.show();
     }

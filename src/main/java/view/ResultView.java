@@ -76,9 +76,7 @@ public class ResultView {
             "-fx-padding: 12 30 12 30;"
         );
         retourButton.setOnAction(e -> {
-            stage.close();
-            Stage homeStage = new Stage();
-            new HomeView().start(homeStage);
+            new HomeView().start(stage);
         });
 
         VBox root = new VBox(30, titleBox, statsBox, analysisBox, retourButton);
@@ -86,7 +84,7 @@ public class ResultView {
         root.setStyle("-fx-background-color: #424242;");
         root.setPadding(new javafx.geometry.Insets(30));
 
-        return new Scene(root, 600, 600);
+        return new Scene(root);
     }
 
     private Label statLabel(String key, String value) {

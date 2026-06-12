@@ -61,9 +61,18 @@ public class MainView extends Application {
 
     @Override
     public void start(Stage stage) {
-        Canvas canvas = new Canvas(700, 560);
+        Canvas canvas = new Canvas();
+        canvas.widthProperty().bind(stage.widthProperty().subtract(250));
+        canvas.heightProperty().bind(stage.heightProperty().subtract(100));
 
         GraphView renderer = new GraphView(canvas, graph);
+        canvas.widthProperty().addListener((obs, oldVal, newVal) -> {
+            renderer.drawGraph();
+        });
+
+        canvas.heightProperty().addListener((obs, oldVal, newVal) -> {
+            renderer.drawGraph();
+        });
         renderer.drawGraph();
 
         SimulationEngine engine = new SimulationEngine(graph);
@@ -173,12 +182,11 @@ public class MainView extends Application {
         Button retourButton = styledButton("← Retour", "#303030");
         retourButton.setOnAction(e -> {
             engine.pause();
-            stage.close();
-            Stage prevStage = new Stage();
+
             if ("demo".equals(source)) {
-                new ScenarioSelectorView().start(prevStage);
+                new ScenarioSelectorView().start(stage);
             } else {
-                new HomeView().start(prevStage);
+                new HomeView().start(stage);
             }
         });
 
@@ -186,11 +194,16 @@ public class MainView extends Application {
         toolbar.setPadding(new Insets(10, 10, 10, 10));
         toolbar.setStyle("-fx-background-color: #303030;");
 
-        HBox mainContent = new HBox(canvas, statsPanel);
+        HBox mainContent = new HBox();
+        mainContent.getChildren().addAll(canvas, statsPanel);
+
+        HBox.setHgrow(canvas, javafx.scene.layout.Priority.ALWAYS);
+        
+        
         VBox root = new VBox(toolbar, mainContent);
         root.setStyle("-fx-background-color: #424242;");
 
-        Scene scene = new Scene(root, 910, 610);
+        Scene scene = new Scene(root);
         stage.setTitle("EXIT — Simulation");
         stage.setScene(scene);
         stage.show();

@@ -135,7 +135,7 @@ public class GraphView {
 
                         	layout.setStyle("-fx-padding: 10;");
                         	
-                        	Scene scene = new Scene(layout, 300, 300);
+                        	Scene scene = new Scene(layout);
                         	popup.setScene(scene);
                         	popup.showAndWait();
                             return;
@@ -174,7 +174,6 @@ public class GraphView {
                     selectedEdge = null;
                     selectedAgent = null;
                     drawGraph();
-                    System.out.println("Selected node: " + node.getName());
                     return;
                 }
             }
@@ -342,7 +341,7 @@ public class GraphView {
 
         	layout.setStyle("-fx-padding: 10;");
         	
-        	Scene scene = new Scene(layout, 250, 250);
+        	Scene scene = new Scene(layout);
         	popup.setScene(scene);
         	popup.showAndWait();
     }
@@ -407,7 +406,7 @@ public class GraphView {
 
         	layout.setStyle("-fx-padding: 10;");
         	
-        	Scene scene = new Scene(layout, 300, 350);
+        	Scene scene = new Scene(layout);
         	popup.setScene(scene);
         	popup.showAndWait();
     }
@@ -480,10 +479,29 @@ public class GraphView {
 
     public void drawGraph() {
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-
+        
         // --- Rendu avec zoom et offset (coordonnées monde) ---
+        
+        double minX = Double.MAX_VALUE;
+        double minY = Double.MAX_VALUE;
+        double maxX = 0;
+        double maxY = 0;
+
+        for (Node n : nodes) {
+            if (n.getX() < minX) minX = n.getX();
+            if (n.getY() < minY) minY = n.getY();
+
+            if (n.getX() > maxX) maxX = n.getX();
+            if (n.getY() > maxY) maxY = n.getY();
+        }
+        
+        double graphWidth = maxX - minX + 120;
+        double graphHeight = maxY - minY + 60;
+
+        double centerX = (canvas.getWidth() - graphWidth) / 2;
+        double centerY = (canvas.getHeight() - graphHeight) / 2;
         gc.save();
-        gc.translate(offsetX, offsetY);
+        gc.translate(centerX, centerY);
         gc.scale(zoom, zoom);
 
         // Mode connexion — afficher un message
@@ -658,42 +676,10 @@ public class GraphView {
         // --- Fin du rendu monde, retour en coordonnées écran ---
 
         // Compteur évacués (fixe sur l'écran, indépendant du zoom)
-        if (engine != null) {
-            int evacuated = engine.getStatistics().getEvacuatedCount();
-            gc.setFill(Color.DARKGREEN);
-            gc.fillRect(620, 15, 160, 25);
-            gc.setFill(Color.WHITE);
-            gc.fillText("Évacués : " + evacuated, 630, 32);
-        }
+        
 
         // Panneau info selon sélection (fixe sur l'écran)
-        double px = 620;
-        double py = 55;
-        if (selectedAgent != null) {
-            gc.setFill(Color.BLACK);
-            gc.fillText("— Agent sélectionné —", px, py);
-            gc.fillText("ID : " + selectedAgent.getId(), px, py + 20);
-            gc.fillText("État : " + selectedAgent.getState(), px, py + 40);
-            gc.fillText("Type : " + selectedAgent.getType(), px, py + 60);
-            gc.fillText("Nœud : " + (selectedAgent.getCurrentNode() != null ? selectedAgent.getCurrentNode().getName() : "transit"), px, py + 80);
-        } else if (selectedEdge != null) {
-            gc.setFill(Color.BLACK);
-            gc.fillText("— Arête sélectionnée —", px, py);
-            gc.fillText("ID : " + selectedEdge.getId(), px, py + 20);
-            gc.fillText("Source : " + selectedEdge.getSource().getName(), px, py + 40);
-            gc.fillText("Cible : " + selectedEdge.getTarget().getName(), px, py + 60);
-            gc.fillText("Largeur : " + selectedEdge.getWidth(), px, py + 80);
-            gc.fillText("Occupancy : " + selectedEdge.getOccupancy(), px, py + 100);
-        } else if (selectedNode != null) {
-            gc.setFill(Color.BLACK);
-            gc.fillText("— Nœud sélectionné —", px, py);
-            gc.fillText("ID : " + selectedNode.getId(), px, py + 20);
-            gc.fillText("Type : " + selectedNode.getType(), px, py + 40);
-            gc.fillText("Capacité : " + selectedNode.getMaxCapacity(), px, py + 60);
-            gc.fillText("Agents : " + selectedNode.getOccupancy(), px, py + 80);
-            gc.fillText("(Cliquez 'Add Edge'", px, py + 100);
-            gc.fillText(" pour connecter)", px, py + 115);
-        }
+        
     }
 
     private Color agentColor(Agent agent) {

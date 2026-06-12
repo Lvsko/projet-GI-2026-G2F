@@ -414,17 +414,13 @@ public class ConfigView {
         Button launchBtn = new Button("▶ Lancer la simulation");
         launchBtn.setStyle(btnPrimary + "-fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 13;");
         launchBtn.setOnAction(e -> {
-            stage.close();
-            Stage simStage = new Stage();
-            new MainView(graph, agents, "config").start(simStage);
+            new MainView(graph, agents, "config").start(stage);
         });
 
         // RETOUR
         Button retourBtn = new Button("← Retour"); retourBtn.setStyle(btnSecondary);
         retourBtn.setOnAction(e -> {
-            stage.close();
-            Stage homeStage = new Stage();
-            new HomeView().start(homeStage);
+            new HomeView().start(stage);
         });
 
         form.getChildren().addAll(
@@ -460,7 +456,7 @@ public class ConfigView {
         HBox mainLayout = new HBox(10, scrollForm, previewBox);
         mainLayout.setStyle("-fx-background-color: #424242;");
 
-        Scene scene = new Scene(mainLayout, 1060, 720);
+        Scene scene = new Scene(mainLayout);
         stage.setScene(scene);
         stage.show();
 
