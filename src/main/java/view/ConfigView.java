@@ -60,6 +60,8 @@ public class ConfigView {
 
     /**
      * Creates a deep copy of the given graph via serialization.
+     * @param g he graph to duplicate
+     * @return a deep copy of the graph, or the original graph if copying fails
      */
     private Graph deepCopy(Graph g) {
         try {
@@ -74,6 +76,7 @@ public class ConfigView {
     /**
      * Generates n random nodes (2 ≤ n ≤ 100) connected into a spanning tree.
      * Last node is always EXIT. Saves state for undo.
+     * @param n the number of nodes to generate
      */
     private void generateRandom(int n) {
         saveState();
@@ -101,11 +104,17 @@ public class ConfigView {
         refreshPreview();
     }
 
+    /**
+     * Saves the current state of the graph into the undo stack.
+     */
     private void saveState() {
         undoStack.push(deepCopy(graph));
         redoStack.clear();
     }
 
+    /**
+     * Restores the previous state of the graph from the undo stack.
+     */
     private void undo() {
         if (!undoStack.isEmpty()) {
             redoStack.push(deepCopy(graph));
@@ -114,6 +123,9 @@ public class ConfigView {
         }
     }
 
+    /**
+     * Restores the next state of the graph from the redo stack.
+     */
     private void redo() {
         if (!redoStack.isEmpty()) {
             undoStack.push(deepCopy(graph));
@@ -122,6 +134,11 @@ public class ConfigView {
         }
     }
 
+    /**
+     * Applies a dark theme style to a JavaFX ComboBox.
+     * @param combo the ComboBox to style
+     * @param <T> the type of items contained in the ComboBox
+     */
     private <T> void darkCombo(ComboBox<T> combo) {
         combo.setStyle("-fx-background-color: #303030; -fx-border-color: #616161; -fx-border-radius: 4;");
         combo.setButtonCell(new ListCell<T>() {
@@ -138,6 +155,11 @@ public class ConfigView {
         });
     }
 
+    /**
+     * Initializes and displays the JavaFX configuration window for building a graph
+     * and setting up a simulation.
+     * @param stage the primary JavaFX stage used to display the configuration window
+     */
     public void start(Stage stage) {
         stage.setTitle("Configure Graph");
 
@@ -483,10 +505,14 @@ public class ConfigView {
         preview.drawGraph();
     }
 
+    /**
+     * Refreshes the graphical preview of the graph.
+     */
     private void refreshPreview() {
         preview = new GraphView(previewCanvas, graph);
         preview.drawGraph();
     }
 
     public Graph getGraph() { return graph; }
+    
 }
