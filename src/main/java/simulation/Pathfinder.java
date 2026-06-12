@@ -12,6 +12,13 @@ import java.util.*;
  */
 public class Pathfinder {
 
+    /**
+     * Finds the shortest path between two nodes using Dijkstra's algorithm with edge distance as cost function.
+     * @param start starting node of the path
+     * @param destination target node
+     * @param graph graph used for navigation
+     * @return ordered list of nodes representing the shortest path
+     */
     public List<Node> dijkstraDistance(Node start, Node destination, Graph graph) {
         if (start == null || destination == null) return new ArrayList<>(); // #1 null guard
 
@@ -50,7 +57,6 @@ public class Pathfinder {
                 }
             }
         }
-
         List<Node> finalPath   = new ArrayList<>();
         Node       currentStep = destination;
         if (previousNodes.get(currentStep) == null && !currentStep.equals(start)) {
@@ -65,6 +71,13 @@ public class Pathfinder {
         return finalPath;
     }
 
+    /**
+     * Computes the optimal path based on travel time using a modified Dijkstra algorithm.
+     * @param start starting node
+     * @param destination target node
+     * @param graph navigation graph
+     * @return ordered list of nodes representing the fastest route
+     */
     public List<Node> dijkstraTime(Node start, Node destination, Graph graph) {
         if (start == null || destination == null) return new ArrayList<>(); // #1 null guard
 
@@ -111,7 +124,6 @@ public class Pathfinder {
                 }
             }
         }
-
         List<Node> finalPath   = new ArrayList<>();
         Node       currentStep = destination;
         if (previousNodes.get(currentStep) == null && !currentStep.equals(start)) {
@@ -126,6 +138,13 @@ public class Pathfinder {
         return finalPath;
     }
 
+    /**
+     * Retrieves the edge connecting two nodes, considering directionality.
+     * @param graph graph containing nodes and edges
+     * @param currentNode first node
+     * @param neighbor second node
+     * @return the connecting edge, or null if no edge exists between the nodes
+     */
     public Edge findConnectingEdge(Graph graph, Node currentNode, Node neighbor) {
         for (Edge edge : graph.getEdges()) {
             boolean isDirectPath  = edge.getSource().equals(currentNode) && edge.getTarget().equals(neighbor);
