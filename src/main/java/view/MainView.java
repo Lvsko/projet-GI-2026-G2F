@@ -91,13 +91,15 @@ public class MainView extends Application {
         canvas.widthProperty().bind(stage.widthProperty().subtract(250));
         canvas.heightProperty().bind(stage.heightProperty().subtract(100));
 
-        GraphView renderer = new GraphView(canvas, graph);
+        SimulationController controller = new SimulationController(graph, stage);
+
+         GraphView renderer = new GraphView(canvas, graph, controller);
         canvas.widthProperty().addListener((obs, oldVal, newVal) -> renderer.drawGraph());
         canvas.heightProperty().addListener((obs, oldVal, newVal) -> renderer.drawGraph());
         renderer.drawGraph();
 
-        SimulationController controller = new SimulationController(graph, stage);
         controller.launchSimulation(agents);
+        
         renderer.setEngine(controller.getEngine());
         SimulationEngine engine = controller.getEngine();
         
