@@ -127,25 +127,25 @@ public class SimulationController {
         Edge edge = graph.getEdge(id);
         if (edge == null) return;
 
-        Pathfinder pf = new Pathfinder();
+            Pathfinder pf = new Pathfinder();
         Node src = edge.getSource();
         Node tgt = edge.getTarget();
         List<Agent> allAgents = engine != null ? engine.getAgents() : new ArrayList<>();
 
-        // Agents on the edge → move back to source
-        for (Agent agent : new ArrayList<>(edge.getAgents())) {
-            agent.arriveAt(src);
-            rerouteAgent(agent, src, pf);
-        }
-
-        // Agents whose path uses the edge → reroute
-        for (Agent agent : allAgents) {
-            if (pathUsesEdge(agent, src, tgt)) {
-                rerouteAgent(agent, agent.getCurrentNode(), pf);
+        List<Agent> agentsToReroute = new ArrayList<>();
+         for (Agent agent : allAgents) {
+            if (agent.getCurrentEdge() == edge || pathUsesEdge(agent, src, tgt)) {
+                agentsToReroute.add(agent);
             }
         }
-
         graph.removeEdge(id);
+
+        for (Agent agent : agentsToReroute) {
+            Node from = agent.getCurrentNode();
+            if (from != null) {
+                rerouteAgent(agent, from, pf);
+            }
+        }
     }
 
     /**
