@@ -1,5 +1,6 @@
 package view;
 
+import controller.SimulationController;
 import model.Graph;
 import model.node.Node;
 import model.Edge;
@@ -9,7 +10,6 @@ import model.agent.AgentState;
 import model.agent.AgentType;
 import model.node.NodeStatus;
 import model.node.NodeType;
-import simulation.SimulationState;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -27,18 +27,15 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 /**
  * JavaFX view for manually configuring a building graph before launching the simulation.
@@ -73,37 +70,7 @@ public class ConfigView {
         }
     }
 
-    /**
-     * Generates n random nodes (2 ≤ n ≤ 100) connected into a spanning tree.
-     * Last node is always EXIT. Saves state for undo.
-     * @param n the number of nodes to generate
-     */
-    private void generateRandom(int n) {
-        saveState();
-        Random rand = new Random();
-        List<Node> newNodes = new ArrayList<>();
-        for (int i = 0; i < n; i++) {
-            String id  = "RN" + (graph.getNodes().size() + i);
-            double x   = 50 + rand.nextDouble() * 500;
-            double y   = 50 + rand.nextDouble() * 400;
-            NodeType type;
-            if      (i == n - 1)  type = NodeType.EXIT;
-            else if (i % 2 == 0)  type = NodeType.ROOM;
-            else                  type = NodeType.CORRIDOR;
-            Node node = new Node(id, id, x, y, 10, NodeStatus.OPEN, type, 1.0f);
-            newNodes.add(node);
-            graph.addNode(node);
-        }
-        // Arbre couvrant aléatoire → connexité garantie
-        for (int i = 1; i < newNodes.size(); i++) {
-            String edgeId = "RE" + (graph.getEdges().size());
-            Node target   = newNodes.get(i);
-            Node source   = newNodes.get(rand.nextInt(i));
-            graph.addEdge(new Edge(edgeId, source, target, 5, 1.0f, 1.0f, false));
-        }
-        refreshPreview();
-    }
-
+    
     /**
      * Saves the current state of the graph into the undo stack.
      */
@@ -119,6 +86,7 @@ public class ConfigView {
         if (!undoStack.isEmpty()) {
             redoStack.push(deepCopy(graph));
             graph = undoStack.pop();
+            controller = new SimulationController(graph, null);
             refreshPreview();
         }
     }
@@ -130,6 +98,7 @@ public class ConfigView {
         if (!redoStack.isEmpty()) {
             undoStack.push(deepCopy(graph));
             graph = redoStack.pop();
+            controller = new SimulationController(graph, null);
             refreshPreview();
         }
     }
@@ -161,6 +130,7 @@ public class ConfigView {
      * @param stage the primary JavaFX stage used to display the configuration window
      */
     public void start(Stage stage) {
+        controller = new SimulationController(graph, stage);
         stage.setTitle("Configure Graph");
 
         String labelStyle    = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial;";
@@ -364,35 +334,18 @@ public class ConfigView {
 
         Button saveBtn = new Button("💾 Save Plan"); saveBtn.setStyle(btnSecondary);
         saveBtn.setOnAction(e -> {
-            FileChooser fc = new FileChooser();
-            fc.setTitle("Save Plan");
-            fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("EXIT Plan", "*.exit"));
-            File file = fc.showSaveDialog(stage);
-            if (file != null) {
-                try {
-                    new SimulationState(graph, new ArrayList<>(), 0).save(file.getAbsolutePath());
-                    saveLoadStatus.setText("Plan sauvegardé.");
-                } catch (Exception ex) {
-                    saveLoadStatus.setText("Erreur sauvegarde : " + ex.getMessage());
-                }
-            }
+            controller.savePlan();
+            saveLoadStatus.setText("Plan sauvegardé.");
         });
 
         Button loadBtn = new Button("📂 Load Plan"); loadBtn.setStyle(btnSecondary);
         loadBtn.setOnAction(e -> {
-            FileChooser fc = new FileChooser();
-            fc.setTitle("Load Plan");
-            fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("EXIT Plan", "*.exit"));
-            File file = fc.showOpenDialog(stage);
-            if (file != null) {
-                try {
-                    SimulationState state = SimulationState.load(file.getAbsolutePath());
-                    graph = state.getGraph();
-                    saveLoadStatus.setText("Plan chargé.");
-                    refreshPreview();
-                } catch (Exception ex) {
-                    saveLoadStatus.setText("Erreur chargement : " + ex.getMessage());
-                }
+            Graph loaded = controller.loadPlan();
+            if (loaded != null) {
+                graph = loaded;
+                controller = new SimulationController(graph, stage);
+                saveLoadStatus.setText("Plan chargé.");
+                refreshPreview();
             }
         });
         HBox saveLoadButtons = new HBox(10, saveBtn, loadBtn);
@@ -416,7 +369,9 @@ public class ConfigView {
                         new Alert(Alert.AlertType.WARNING, "Maximum 100 nœuds (limite performances).").showAndWait();
                         return;
                     }
-                    generateRandom(n);
+                    saveState();
+                    controller.generateRandom(n);
+                    refreshPreview();
                 } catch (NumberFormatException ex) {
                     new Alert(Alert.AlertType.ERROR, "Entrez un nombre entier valide.").showAndWait();
                 }
@@ -427,28 +382,11 @@ public class ConfigView {
         Button launchBtn = new Button("▶ Lancer la simulation");
         launchBtn.setStyle(btnPrimary + "-fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 13;");
         launchBtn.setOnAction(e -> {
-            // Vérification nœud EXIT (#1)
-            boolean hasExit = graph.getNodes().stream()
-                .anyMatch(n -> n.getType() == NodeType.EXIT);
-            if (!hasExit) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Erreur");
-                alert.setHeaderText("Aucun nœud EXIT");
-                alert.setContentText("Ajoutez au moins un nœud de type EXIT avant de lancer la simulation.");
-                alert.showAndWait();
-                return;
+            controller.launchSimulation(agents);
+            if (controller.getEngine() != null) {
+                stage.close();
+                new MainView(graph, agents, "config").start(new Stage());
             }
-            // Vérification agents (#3)
-            if (agents.isEmpty()) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Erreur");
-                alert.setHeaderText("Aucun agent");
-                alert.setContentText("Ajoutez au moins un agent avant de lancer la simulation.");
-                alert.showAndWait();
-                return;
-            }
-            stage.close();
-            new MainView(graph, agents, "config").start(new Stage());
         });
 
         // --- RETOUR ---
