@@ -1,7 +1,5 @@
 package view;
 
-
-import controller.SimulationController;
 import model.Graph;
 import model.node.Node;
 import model.Edge;
@@ -13,6 +11,7 @@ import model.agent.AgentState;
 import model.node.NodeStatus;
 import model.node.NodeType;
 import simulation.SimulationEngine;
+import simulation.Pathfinder;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.scene.control.ComboBox;
@@ -28,9 +27,11 @@ import model.agent.AgentType;
 
 /**
  * Handles the 2D rendering of the graph, agents and nodes.
+ *
  * @author Leonardo
  */
 public class GraphView {
+
     private Canvas canvas;
     private GraphicsContext gc;
     private Graph graph;
@@ -40,8 +41,11 @@ public class GraphView {
     private Node selectedNode;
     private Edge selectedEdge;
     private Agent selectedAgent;
+
+    /** Callback invoked whenever the selection changes (agent, node, edge, or deselect). */
+    private Runnable onSelectionChanged;
+
     private SimulationEngine engine;
-    private SimulationController controller;
     private int nodeCounter;
     private double lastClickX = 100;
     private double lastClickY = 100;
@@ -56,6 +60,13 @@ public class GraphView {
     private boolean connectMode = false;
     private Node connectSource = null;
 
+    /**
+     * Constructs a GraphView responsible for rendering and interacting with a graph
+     * on a JavaFX Canvas.
+     *
+     * @param canvas the JavaFX canvas used for rendering the graph
+     * @param graph  the underlying graph model to visualize and manipulate
+     */
     public GraphView(Canvas canvas, Graph graph) {
         this.canvas = canvas;
         this.gc = canvas.getGraphicsContext2D();
@@ -91,48 +102,26 @@ public class GraphView {
                                 int w      = Integer.parseInt(widthField.getText().trim());
                                 float dist = Float.parseFloat(distanceField.getText().trim());
                                 float spd  = Float.parseFloat(speedField.getText().trim());
-                                // Validations #6 #8
                                 if (w <= 0)    { errorLabel.setText("La largeur doit être > 0.");  return; }
                                 if (dist <= 0) { errorLabel.setText("La distance doit être > 0."); return; }
                                 if (spd <= 0)  { errorLabel.setText("La vitesse doit être > 0.");  return; }
                                 Edge newEdge = new Edge(edgeId, connectSource, node, w, dist, spd, directedBox.getValue());
                                 edges.add(newEdge);
                                 graph.addEdge(newEdge);
-                                connectMode  = false;
+                                connectMode   = false;
                                 connectSource = null;
                                 drawGraph();
                                 popup.close();
                             } catch (NumberFormatException ex) {
-                                errorLabel.setText("Valeurs invalides — entrez des nombres."); // #7
+                                errorLabel.setText("Valeurs invalides — entrez des nombres.");
                             }
                         });
-                        
-                        VBox layout = new VBox(
-                        	    10,
-                        	    new Label("Largeur"),
-                        	    widthField,
-                        	    new Label("Distance"),
-                        	    distanceField,
-                        	    new Label("Speed Modifier"),
-                        	    speedField,
-                        	    new Label("Directed"),
-                        	    directedBox,
-                        	    createButton
-                        	);
-
-                        	layout.setStyle("-fx-padding: 10;");
-                        	
-                        	Scene scene = new Scene(layout);
-                        	popup.setScene(scene);
-                        	popup.showAndWait();
-                            return;
-                            
                         VBox layout = new VBox(10,
-                                new Label("Largeur"),      widthField,
-                                new Label("Distance"),     distanceField,
-                                new Label("Speed Modifier"), speedField,
-                                new Label("Directed"),     directedBox,
-                                createButton, errorLabel
+                            new Label("Largeur"),        widthField,
+                            new Label("Distance"),       distanceField,
+                            new Label("Speed Modifier"), speedField,
+                            new Label("Directed"),       directedBox,
+                            createButton, errorLabel
                         );
                         layout.setStyle("-fx-padding: 10;");
                         popup.setScene(new Scene(layout, 300, 320));
@@ -146,6 +135,7 @@ public class GraphView {
                 return;
             }
 
+            // Priority 1 : agents
             List<Agent> agentsToDraw = (engine != null) ? engine.getAgents() : agents;
             for (Agent agent : agentsToDraw) {
                 Node node = agent.getCurrentNode();
@@ -159,38 +149,45 @@ public class GraphView {
                         selectedNode  = null;
                         selectedEdge  = null;
                         drawGraph();
+                        if (onSelectionChanged != null) onSelectionChanged.run();
                         return;
                     }
                 }
             }
 
+            // Priority 2 : nodes
             for (Node node : nodes) {
                 if (hitNode(node, mouseX, mouseY)) {
                     selectedNode  = node;
                     selectedEdge  = null;
                     selectedAgent = null;
                     drawGraph();
+                    if (onSelectionChanged != null) onSelectionChanged.run();
                     return;
                 }
             }
 
+            // Priority 3 : edges
             for (Edge edge : edges) {
                 if (hitEdge(edge, mouseX, mouseY)) {
                     selectedEdge  = edge;
                     selectedNode  = null;
                     selectedAgent = null;
                     drawGraph();
+                    if (onSelectionChanged != null) onSelectionChanged.run();
                     return;
                 }
             }
 
+            // Click in empty space — deselect all
             selectedNode  = null;
             selectedEdge  = null;
             selectedAgent = null;
             drawGraph();
+            if (onSelectionChanged != null) onSelectionChanged.run();
         });
 
-        // Zoom avec clamp pour éviter zoom nul ou négatif (bonus robustesse)
+        // Applies zoom with clamping to prevent zero or negative zoom values
         canvas.setOnScroll(event -> {
             zoom = event.getDeltaY() > 0 ? zoom * 1.1 : zoom / 1.1;
             zoom = Math.max(0.1, Math.min(zoom, 8.0));
@@ -204,8 +201,8 @@ public class GraphView {
             double wy = toWorldY(event.getY());
             for (Node node : nodes) {
                 if (hitNode(node, wx, wy)) {
-                    draggedNode   = node;
-                    draggingNode  = true;
+                    draggedNode  = node;
+                    draggingNode = true;
                     return;
                 }
             }
@@ -234,14 +231,77 @@ public class GraphView {
         });
     }
 
-    private double toWorldX(double screenX) { return (screenX - offsetX) / zoom; }
-    private double toWorldY(double screenY) { return (screenY - offsetY) / zoom; }
-
-    private boolean hitNode(Node node, double x, double y) {
-        return x >= node.getX() && x <= node.getX() + 120
-                && y >= node.getY() && y <= node.getY() + 60;
+    /**
+     * Registers a callback invoked every time the selection changes
+     * (agent, node, edge selected, or deselected).
+     *
+     * @param callback the Runnable to invoke on selection change
+     */
+    public void setOnSelectionChanged(Runnable callback) {
+        this.onSelectionChanged = callback;
     }
 
+    /**
+     * Returns the currently selected node, or {@code null} if none.
+     *
+     * @return the selected {@link Node}
+     */
+    public Node getSelectedNode() { return selectedNode; }
+
+    /**
+     * Returns the currently selected edge, or {@code null} if none.
+     *
+     * @return the selected {@link Edge}
+     */
+    public Edge getSelectedEdge() { return selectedEdge; }
+
+    /**
+     * Returns the currently selected agent, or {@code null} if none.
+     *
+     * @return the selected {@link Agent}
+     */
+    public Agent getSelectedAgent() { return selectedAgent; }
+
+    /**
+     * Converts a screen X coordinate into a world X coordinate
+     * based on the current camera offset and zoom level.
+     *
+     * @param screenX the X coordinate in screen space (pixels)
+     * @return the corresponding X coordinate in world space
+     */
+    private double toWorldX(double screenX) { return (screenX - offsetX) / zoom; }
+
+    /**
+     * Converts a screen Y coordinate into a world Y coordinate
+     * based on the current camera offset and zoom level.
+     *
+     * @param screenY the Y coordinate in screen space (pixels)
+     * @return the corresponding Y coordinate in world space
+     */
+    private double toWorldY(double screenY) { return (screenY - offsetY) / zoom; }
+
+    /**
+     * Checks whether a given point in world coordinates lies inside a node's bounding box.
+     *
+     * @param node the node to test against
+     * @param x    the X coordinate in world space
+     * @param y    the Y coordinate in world space
+     * @return {@code true} if the point lies within the node's bounds
+     */
+    private boolean hitNode(Node node, double x, double y) {
+        return x >= node.getX() && x <= node.getX() + 120
+            && y >= node.getY() && y <= node.getY() + 60;
+    }
+
+    /**
+     * Determines whether a point in world coordinates is close enough to an edge
+     * to be considered as hitting it.
+     *
+     * @param edge the edge to test against
+     * @param mx   the X coordinate of the mouse in world space
+     * @param my   the Y coordinate of the mouse in world space
+     * @return {@code true} if the point is within interaction range of the edge
+     */
     private boolean hitEdge(Edge edge, double mx, double my) {
         double x1   = edge.getSource().getX() + 60;
         double y1   = edge.getSource().getY() + 30;
@@ -255,11 +315,21 @@ public class GraphView {
         return Math.sqrt((mx - px) * (mx - px) + (my - py) * (my - py)) < 8;
     }
 
+    /**
+     * Sets the simulation engine used by this view and synchronizes the local
+     * agent list with the engine's current state.
+     *
+     * @param engine the simulation engine to attach to this view
+     */
     public void setEngine(SimulationEngine engine) {
         this.engine = engine;
         this.agents = new ArrayList<>(engine.getAgents());
     }
 
+    /**
+     * Opens a modal dialog allowing the user to spawn a new agent at the currently
+     * selected node, or at the first available ROOM node if none is selected.
+     */
     public void spawnAgentAtRoom() {
         Node target = selectedNode;
         if (target == null) {
@@ -275,56 +345,42 @@ public class GraphView {
         ComboBox<AgentState>    stateBox    = new ComboBox<>();
         ComboBox<AgentBehavior> behaviorBox = new ComboBox<>();
         ComboBox<AgentType>     typeBox     = new ComboBox<>();
-        stateBox.getItems().addAll(AgentState.values());    stateBox.setValue(AgentState.CALM);
+        stateBox.getItems().addAll(AgentState.values());       stateBox.setValue(AgentState.CALM);
         behaviorBox.getItems().addAll(AgentBehavior.values()); behaviorBox.setValue(AgentBehavior.COOPERATIVE);
-        typeBox.getItems().addAll(AgentType.values());      typeBox.setValue(AgentType.ADULT);
+        typeBox.getItems().addAll(AgentType.values());         typeBox.setValue(AgentType.ADULT);
         Button createButton = new Button("Créer");
         createButton.setOnAction(e -> {
             Agent agent = new Agent(
-                    "agent" + System.currentTimeMillis(), finalTarget, 1.0f,
-                    stateBox.getValue(), behaviorBox.getValue(), typeBox.getValue(),
-                    0.5f, graph
+                "agent" + System.currentTimeMillis(), finalTarget, 1.0f,
+                stateBox.getValue(), behaviorBox.getValue(), typeBox.getValue(),
+                0.5f, graph
             );
             agents.add(agent);
             if (engine != null) engine.addAgent(agent);
             drawGraph();
             popup.close();
         });
-        
-        VBox layout = new VBox(
-        	    10,
-        	    new Label("État"),
-        	    stateBox,
-        	    new Label("Comportement"),
-        	    behaviorBox,
-        	    new Label("Type"),
-        	    typeBox,
-        	    createButton
-        	);
-
-        	layout.setStyle("-fx-padding: 10;");
-        	
-        	Scene scene = new Scene(layout);
-        	popup.setScene(scene);
-        	popup.showAndWait();
         VBox layout = new VBox(10,
-                new Label("État"),         stateBox,
-                new Label("Comportement"), behaviorBox,
-                new Label("Type"),         typeBox,
-                createButton
+            new Label("État"),         stateBox,
+            new Label("Comportement"), behaviorBox,
+            new Label("Type"),         typeBox,
+            createButton
         );
         layout.setStyle("-fx-padding: 10;");
         popup.setScene(new Scene(layout, 250, 250));
         popup.showAndWait();
     }
 
+    /**
+     * Opens a modal dialog to create a new node at the last clicked position on the canvas.
+     */
     public void addRoomNode() {
         String id = "N" + (nodeCounter + 1);
         Stage popup = new Stage();
         popup.initModality(Modality.APPLICATION_MODAL);
         popup.setTitle("Nouveau nœud");
-        TextField nameField         = new TextField("Room " + (nodeCounter + 1));
-        TextField capacityField     = new TextField("10");
+        TextField nameField           = new TextField("Room " + (nodeCounter + 1));
+        TextField capacityField       = new TextField("10");
         TextField attractivenessField = new TextField("1.0");
         ComboBox<NodeType>   typeBox   = new ComboBox<>();
         ComboBox<NodeStatus> statusBox = new ComboBox<>();
@@ -335,15 +391,15 @@ public class GraphView {
         Button createButton = new Button("Créer");
         createButton.setOnAction(e -> {
             try {
-                int    capacity      = Integer.parseInt(capacityField.getText().trim());
+                int    capacity       = Integer.parseInt(capacityField.getText().trim());
                 float  attractiveness = Float.parseFloat(attractivenessField.getText().trim());
-                String name          = nameField.getText().trim();
-                if (name.isEmpty())    { errorLabel.setText("Le nom est requis.");           return; }
-                if (capacity <= 0)     { errorLabel.setText("La capacité doit être > 0.");   return; } // #11
+                String name           = nameField.getText().trim();
+                if (name.isEmpty())      { errorLabel.setText("Le nom est requis.");             return; }
+                if (capacity <= 0)       { errorLabel.setText("La capacité doit être > 0.");     return; }
                 if (attractiveness <= 0) { errorLabel.setText("L'attractivité doit être > 0."); return; }
                 Node newNode = new Node(
-                        id, name, lastClickX - 60, lastClickY - 30,
-                        capacity, statusBox.getValue(), typeBox.getValue(), attractiveness
+                    id, name, lastClickX - 60, lastClickY - 30,
+                    capacity, statusBox.getValue(), typeBox.getValue(), attractiveness
                 );
                 nodes.add(newNode);
                 graph.addNode(newNode);
@@ -351,42 +407,25 @@ public class GraphView {
                 drawGraph();
                 popup.close();
             } catch (NumberFormatException ex) {
-                errorLabel.setText("Valeurs invalides — entrez des nombres."); // #7
+                errorLabel.setText("Valeurs invalides — entrez des nombres.");
             }
         });
-        VBox layout = new VBox(
-        	    10,
-        	    new Label("Nom"),
-        	    nameField,
-        	    new Label("Type"),
-        	    typeBox,
-        	    new Label("Statut"),
-        	    statusBox,
-        	    new Label("Capacité"),
-        	    capacityField,
-        	    new Label("Attractivité"),
-        	    attractivenessField,
-        	    createButton
-        	);
-
-        	layout.setStyle("-fx-padding: 10;");
-        	
-        	Scene scene = new Scene(layout);
-        	popup.setScene(scene);
-        	popup.showAndWait();
         VBox layout = new VBox(10,
-                new Label("Nom"),         nameField,
-                new Label("Type"),        typeBox,
-                new Label("Statut"),      statusBox,
-                new Label("Capacité"),    capacityField,
-                new Label("Attractivité"), attractivenessField,
-                createButton, errorLabel
+            new Label("Nom"),          nameField,
+            new Label("Type"),         typeBox,
+            new Label("Statut"),       statusBox,
+            new Label("Capacité"),     capacityField,
+            new Label("Attractivité"), attractivenessField,
+            createButton, errorLabel
         );
         layout.setStyle("-fx-padding: 10;");
         popup.setScene(new Scene(layout, 300, 370));
         popup.showAndWait();
     }
 
+    /**
+     * Activates edge creation mode starting from the currently selected node.
+     */
     public void startAddEdge() {
         if (selectedNode == null) return;
         connectMode   = true;
@@ -395,7 +434,12 @@ public class GraphView {
     }
 
     /**
-     * Vérifie si le chemin courant d'un agent emprunte l'arête src→tgt (ou tgt→src).
+     * Checks whether an agent's current planned path uses a given edge between two nodes.
+     *
+     * @param agent the agent whose path is being analyzed
+     * @param src   one endpoint of the edge
+     * @param tgt   the other endpoint of the edge
+     * @return {@code true} if the agent's path uses the edge
      */
     private boolean pathUsesEdge(Agent agent, Node src, Node tgt) {
         List<Node> path = agent.getCurrentPath();
@@ -404,71 +448,101 @@ public class GraphView {
         if (current != null) {
             Node next = path.get(0);
             if ((current.equals(src) && next.equals(tgt)) ||
-                    (current.equals(tgt) && next.equals(src))) return true;
+                (current.equals(tgt) && next.equals(src))) return true;
         }
         for (int i = 0; i < path.size() - 1; i++) {
             if ((path.get(i).equals(src) && path.get(i + 1).equals(tgt)) ||
-                    (path.get(i).equals(tgt) && path.get(i + 1).equals(src))) return true;
+                (path.get(i).equals(tgt) && path.get(i + 1).equals(src))) return true;
         }
         return false;
     }
 
-    /** Removes the currently selected element (node, edge or agent) */
+    /**
+     * Removes the currently selected element (node, edge, or agent).
+     * Agents on a deleted node are rerouted to a neighbour when possible.
+     * Agents whose path used a deleted edge are rerouted via Dijkstra.
+     * Fires the {@code onSelectionChanged} callback after each removal.
+     */
     public void removeSelectedNode() {
         if (selectedAgent != null) {
             agents.remove(selectedAgent);
             if (engine != null) engine.removeAgent(selectedAgent);
             selectedAgent = null;
             drawGraph();
+            if (onSelectionChanged != null) onSelectionChanged.run();
             return;
         }
 
         if (selectedEdge != null) {
-            if (controller != null) {
-                controller.removeEdge(selectedEdge.getId());
+            Node edgeSource = selectedEdge.getSource();
+            Node edgeTarget = selectedEdge.getTarget();
+            List<Agent> agentsOnEdge    = new ArrayList<>(selectedEdge.getAgents());
+            List<Agent> allAgents       = (engine != null) ? engine.getAgents() : agents;
+            List<Agent> agentsToReroute = new ArrayList<>();
+            for (Agent agent : allAgents) {
+                if (pathUsesEdge(agent, edgeSource, edgeTarget)) agentsToReroute.add(agent);
             }
+            // Remove first so Dijkstra does not re-route through the deleted edge
             edges.remove(selectedEdge);
+            graph.removeEdge(selectedEdge.getId());
+            Pathfinder pf = new Pathfinder();
+            for (Agent agent : agentsOnEdge) {
+                agent.arriveAt(edgeSource);
+                if (agent.getDestinationNode() != null) {
+                    List<Node> newPath = pf.dijkstraTime(edgeSource, agent.getDestinationNode(), graph);
+                    if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
+                    agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
+                }
+            }
+            for (Agent agent : agentsToReroute) {
+                Node currentNode = agent.getCurrentNode();
+                if (currentNode != null && agent.getDestinationNode() != null) {
+                    List<Node> newPath = pf.dijkstraTime(currentNode, agent.getDestinationNode(), graph);
+                    if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
+                    agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
+                }
+            }
             selectedEdge = null;
             drawGraph();
+            if (onSelectionChanged != null) onSelectionChanged.run();
             return;
         }
 
         if (selectedNode == null) return;
 
-        if (controller != null) {
-            controller.removeNode(selectedNode.getId());
+        // Relocate agents to a neighbour before deletion
+        List<Node> neighbors = graph.getNeighbors(selectedNode);
+        Pathfinder pf = new Pathfinder();
+        for (Agent a : new ArrayList<>(agents)) {
+            if (selectedNode.equals(a.getCurrentNode())) {
+                if (!neighbors.isEmpty()) {
+                    Node fallback = neighbors.get(0);
+                    selectedNode.removeAgent(a);
+                    a.arriveAt(fallback);
+                    if (a.getDestinationNode() != null) {
+                        List<Node> newPath = pf.dijkstraTime(fallback, a.getDestinationNode(), graph);
+                        if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
+                        a.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
+                    }
+                } else {
+                    if (engine != null) engine.removeAgent(a);
+                    agents.remove(a);
+                }
+            }
         }
         edges.removeIf(e -> e.getSource().equals(selectedNode) || e.getTarget().equals(selectedNode));
+        graph.removeNode(selectedNode.getId());
         nodes.remove(selectedNode);
         selectedNode = null;
         drawGraph();
+        if (onSelectionChanged != null) onSelectionChanged.run();
     }
 
+    /** Renders the entire graph onto the canvas. */
     public void drawGraph() {
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        
-        // --- Rendu avec zoom et offset (coordonnées monde) ---
-        
-        double minX = Double.MAX_VALUE;
-        double minY = Double.MAX_VALUE;
-        double maxX = 0;
-        double maxY = 0;
-
-        for (Node n : nodes) {
-            if (n.getX() < minX) minX = n.getX();
-            if (n.getY() < minY) minY = n.getY();
-
-            if (n.getX() > maxX) maxX = n.getX();
-            if (n.getY() > maxY) maxY = n.getY();
-        }
-        
-        double graphWidth = maxX - minX + 120;
-        double graphHeight = maxY - minY + 60;
-
-        double centerX = (canvas.getWidth() - graphWidth) / 2;
-        double centerY = (canvas.getHeight() - graphHeight) / 2;
         gc.save();
-        gc.translate(centerX, centerY);
+        gc.translate(offsetX, offsetY);
         gc.scale(zoom, zoom);
 
         if (connectMode) {
@@ -500,8 +574,12 @@ public class GraphView {
                 double arrowX      = x2 - 30 * Math.cos(angle);
                 double arrowY      = y2 - 30 * Math.sin(angle);
                 gc.setStroke(edge == selectedEdge ? Color.BLUE : Color.BLACK);
-                gc.strokeLine(arrowX, arrowY, arrowX - arrowLength * Math.cos(angle - Math.PI / 6), arrowY - arrowLength * Math.sin(angle - Math.PI / 6));
-                gc.strokeLine(arrowX, arrowY, arrowX - arrowLength * Math.cos(angle + Math.PI / 6), arrowY - arrowLength * Math.sin(angle + Math.PI / 6));
+                gc.strokeLine(arrowX, arrowY,
+                    arrowX - arrowLength * Math.cos(angle - Math.PI / 6),
+                    arrowY - arrowLength * Math.sin(angle - Math.PI / 6));
+                gc.strokeLine(arrowX, arrowY,
+                    arrowX - arrowLength * Math.cos(angle + Math.PI / 6),
+                    arrowY - arrowLength * Math.sin(angle + Math.PI / 6));
             }
         }
 
@@ -541,8 +619,8 @@ public class GraphView {
                 Node previous = start;
                 for (Node next : selectedAgent.getCurrentPath()) {
                     double x1 = previous.getX() + 60, y1 = previous.getY() + 30;
-                    double x2 = next.getX()     + 60, y2 = next.getY()     + 30;
-                    gc.setStroke(Color.WHITE);             gc.setLineWidth(5); gc.strokeLine(x1, y1, x2, y2);
+                    double x2 = next.getX()      + 60, y2 = next.getY()     + 30;
+                    gc.setStroke(Color.WHITE);              gc.setLineWidth(5); gc.strokeLine(x1, y1, x2, y2);
                     gc.setStroke(agentColor(selectedAgent)); gc.setLineWidth(3); gc.strokeLine(x1, y1, x2, y2);
                     previous = next;
                 }
@@ -558,9 +636,9 @@ public class GraphView {
             if (node != null) agentsByNode.computeIfAbsent(node, k -> new ArrayList<>()).add(agent);
         }
         for (java.util.Map.Entry<Node, List<Agent>> entry : agentsByNode.entrySet()) {
-            Node node       = entry.getKey();
+            Node        node       = entry.getKey();
             List<Agent> nodeAgents = entry.getValue();
-            int  count      = nodeAgents.size();
+            int         count      = nodeAgents.size();
             if (count <= 4) {
                 for (int i = 0; i < count; i++) {
                     Agent agent = nodeAgents.get(i);
@@ -603,50 +681,22 @@ public class GraphView {
 
         gc.restore();
 
-        // Compteur évacués (fixe sur l'écran, indépendant du zoom)
-        
-
-        // Panneau info selon sélection (fixe sur l'écran)
-        
-
-        // Compteur évacués (fixe)
+        // Evacuated counter — fixed top-left overlay, outside world transform (KAN-41)
         if (engine != null) {
             gc.setFill(Color.DARKGREEN);
-            gc.fillRect(620, 15, 160, 25);
+            gc.fillRect(10, 15, 160, 25);
             gc.setFill(Color.WHITE);
-            gc.fillText("Évacués : " + engine.getStatistics().getEvacuatedCount(), 630, 32);
+            gc.fillText("Évacués : " + engine.getStatistics().getEvacuatedCount(), 20, 32);
         }
-
-        // Panneau info (fixe)
-        double px = 620, py = 55;
-        if (selectedAgent != null) {
-            gc.setFill(Color.BLACK);
-            gc.fillText("— Agent sélectionné —", px, py);
-            gc.fillText("ID : "    + selectedAgent.getId(),    px, py + 20);
-            gc.fillText("État : "  + selectedAgent.getState(), px, py + 40);
-            gc.fillText("Type : "  + selectedAgent.getType(),  px, py + 60);
-            gc.fillText("Nœud : "  + (selectedAgent.getCurrentNode() != null
-                    ? selectedAgent.getCurrentNode().getName() : "transit"), px, py + 80);
-        } else if (selectedEdge != null) {
-            gc.setFill(Color.BLACK);
-            gc.fillText("— Arête sélectionnée —",                    px, py);
-            gc.fillText("ID : "        + selectedEdge.getId(),        px, py + 20);
-            gc.fillText("Source : "    + selectedEdge.getSource().getName(), px, py + 40);
-            gc.fillText("Cible : "     + selectedEdge.getTarget().getName(), px, py + 60);
-            gc.fillText("Largeur : "   + selectedEdge.getWidth(),     px, py + 80);
-            gc.fillText("Occupancy : " + selectedEdge.getOccupancy(), px, py + 100);
-        } else if (selectedNode != null) {
-            gc.setFill(Color.BLACK);
-            gc.fillText("— Nœud sélectionné —",                      px, py);
-            gc.fillText("ID : "       + selectedNode.getId(),         px, py + 20);
-            gc.fillText("Type : "     + selectedNode.getType(),       px, py + 40);
-            gc.fillText("Capacité : " + selectedNode.getMaxCapacity(), px, py + 60);
-            gc.fillText("Agents : "   + selectedNode.getOccupancy(),  px, py + 80);
-            gc.fillText("(Cliquez 'Add Edge'",  px, py + 100);
-            gc.fillText(" pour connecter)",     px, py + 115);
-        }
+        // Selection info is now displayed in the MainView stats bar (KAN-41)
     }
 
+    /**
+     * Returns the display color associated with an agent's current state.
+     *
+     * @param agent the agent whose state determines the color
+     * @return the JavaFX {@link Color} representing the agent's state
+     */
     private Color agentColor(Agent agent) {
         switch (agent.getState()) {
             case CALM:     return Color.GREEN;
@@ -657,7 +707,6 @@ public class GraphView {
     }
 
     public void removeAgent(Agent agent) { agents.remove(agent); }
-    public void setController(SimulationController controller) { this.controller = controller; }
     public Graph getGraph()              { return graph; }
     public List<Agent> getAgents()       { return agents; }
 }
