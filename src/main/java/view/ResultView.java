@@ -31,6 +31,12 @@ import java.util.Map;
  */
 public class ResultView {
 
+    /**
+     * Creates the result scene displaying simulation statistics, heatmap visualization, and comparison tools.
+     * @param stage the primary stage used for navigation
+     * @param engine the simulation engine containing results
+     * @return the constructed JavaFX scene
+     */
     public Scene createScene(Stage stage, SimulationEngine engine) {
         Statistics stats = engine.getStatistics();
         Graph graph = engine.getGraph();
@@ -129,7 +135,12 @@ public class ResultView {
         return new Scene(scroll, 640, 720);
     }
 
-    /** Draws the congestion heatmap on the given canvas */
+    /** 
+     * Draws the congestion heatmap on the given canvas 
+     * @param canvas the canvas on which the heatmap is rendered
+     * @param graph the graph structure of the simulation
+     * @param stats the simulation statistics used for visualization
+     */
     private void drawHeatmap(Canvas canvas, Graph graph, Statistics stats) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.setFill(Color.web("#1e1e1e"));
@@ -206,6 +217,11 @@ public class ResultView {
         }
     }
 
+    /**
+     * Saves the current simulation statistics to a file using Java serialization.
+     * @param stage the stage used to display the file chooser dialog
+     * @param stats the statistics object to serialize and save
+     */
     private void saveStats(Stage stage, Statistics stats) {
         FileChooser fc = new FileChooser();
         fc.setTitle("Sauvegarder le run");
@@ -220,6 +236,11 @@ public class ResultView {
         }
     }
 
+    /**
+     * Loads previously saved simulation statistics from a file.
+     * @param stage the stage used to display the file chooser dialog
+     * @return the deserialized Statistics object, or null if loading fails or is cancelled
+     */
     private Statistics loadStats(Stage stage) {
         FileChooser fc = new FileChooser();
         fc.setTitle("Charger un run précédent");
@@ -234,6 +255,11 @@ public class ResultView {
         }
     }
 
+    /**
+     * Displays a comparison window between two simulation runs
+     * @param run1 the first simulation run (current or baseline)
+     * @param run2 the second simulation run to compare against
+     */
     private void showComparison(Statistics run1, Statistics run2) {
         Label title = new Label("COMPARAISON DES RUNS");
         title.setFont(Font.font("Georgia", FontWeight.BOLD, 22));
@@ -286,6 +312,12 @@ public class ResultView {
         compStage.show();
     }
 
+    /**
+     * Creates a formatted label used to display a comparison result in the UI.
+     * @param val2 the value of the second run with a visual indicator (✓ or ✗)
+     * @param run1Better true if run1 performs better than run2 for this metric
+     * @return a styled JavaFX Label representing the comparison result
+     */
     private Label compareLabel(String val2, boolean run1Better) {
         Label l = new Label(val2 + (run1Better ? "  ✗" : "  ✓"));
         l.setFont(Font.font("Arial", FontWeight.BOLD, 14));
@@ -293,6 +325,11 @@ public class ResultView {
         return l;
     }
 
+    /**
+     * Creates a header label used in comparison tables.
+     * @param text the header text
+     * @return a styled JavaFX Label used as a table header
+     */
     private Label headerLabel(String text) {
         Label l = new Label(text);
         l.setFont(Font.font("Georgia", FontWeight.BOLD, 15));
@@ -300,6 +337,11 @@ public class ResultView {
         return l;
     }
 
+    /**
+     * Creates a standard cell label for displaying metric values in the comparison table.
+     * @param text the text content of the cell
+     * @return a styled JavaFX Label
+     */
     private Label cellLabel(String text) {
         Label l = new Label(text);
         l.setFont(Font.font("Arial", 14));
@@ -307,6 +349,12 @@ public class ResultView {
         return l;
     }
 
+    /**
+     * Creates a formatted statistic label for the results panel.
+     * @param key the name of the statistic
+     * @param value the value associated with the statistic
+     * @return a styled JavaFX Label combining key and value
+     */
     private Label statLabel(String key, String value) {
         Label l = new Label(key + " : " + value);
         l.setFont(Font.font("Arial", 15));
@@ -314,6 +362,12 @@ public class ResultView {
         return l;
     }
 
+    /**
+     * Creates a legend label for the heatmap color explanation
+     * @param text the legend description
+     * @param color the hex color used for the label text
+     * @return a styled JavaFX Label representing a legend entry
+     */
     private Label legendLabel(String text, String color) {
         Label l = new Label(text);
         l.setFont(Font.font("Arial", 12));
