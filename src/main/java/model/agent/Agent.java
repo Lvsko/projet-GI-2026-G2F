@@ -20,6 +20,9 @@ import java.util.Objects;
  */
 public class Agent implements Serializable {
 
+	private static final long serialVersionUID = 1L;
+	private static int numberAgent = 0;
+
     private final String id;
     private Node currentNode;
     private Edge currentEdge;
@@ -29,26 +32,36 @@ public class Agent implements Serializable {
     private AgentBehavior behavior;
     private AgentType type;
     private float densityTolerance;
-	private List<Node> currentPath = new ArrayList<>();
 	private Node previousNode;
-    private static int numberAgent = 0;
+	private List<Node> currentPath = new ArrayList<>();
 
     /**
      * Creates an agent with an identifier and a starting node.
-     * @param id          unique identifier of the agent
+     * @param id   unique identifier of the agent
      * @param startNode   initial node of the agent
-	 * @param destinationNode target exit node
      * @param maxSpeed maximum speed of the agent
      * @param state initial psychological state
      * @param behavior movement behavior
      * @param type physical profile
      * @param densityTolerance tolerance to crowded areas
+	 * @param graph graph of the simulation
      */
     public Agent(String id, Node startNode, float maxSpeed, AgentState state, AgentBehavior behavior, AgentType type, float densityTolerance, Graph graph) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Identifier can't be empty");
         }
+		Objects.requireNonNull(graph, "Graph can't be null");
+		Objects.requireNonNull(state, "State cannot be null");
+		Objects.requireNonNull(behavior, "Behavior cannot be null");
+		Objects.requireNonNull(type, "Type cannot be null");
+		if (maxSpeed <= 0) {
+    		throw new IllegalArgumentException("Max speed must be positive");
+		}
+		if (densityTolerance < 0 || densityTolerance > 1) {
+    		throw new IllegalArgumentException( "Density tolerance must be between 0 and 1");
+		}
         numberAgent++;
+		
         this.id = id;
         this.currentNode = startNode;
         this.currentEdge = null;
@@ -66,11 +79,10 @@ public class Agent implements Serializable {
     /**
      * Creates an agent with an identifier "agentN" and a starting node.
      * @param startNode   initial node of the agent
+	 * @param graph graph of the simulation
      */
-
     public Agent(Node startNode, Graph graph) {
-        this(
-            "agent" + numberAgent,
+        this( "agent" + numberAgent,
             startNode,
             1.0f,
             AgentState.CALM,
@@ -81,21 +93,11 @@ public class Agent implements Serializable {
         );
     }
 
-    
-    /** 
-     * @return the agent's identifier
-     */
-    public String getId() { return id; }
-    /**
-     * @return the agent's current node
-     */
-    public Node getCurrentNode() { return currentNode; }
-    /**
-     * @return the agent's current edge
-     */
-    public Edge getCurrentEdge() { return currentEdge; }
 
-    
+    public String getId() { return id; }
+    public Node getCurrentNode() { return currentNode; }
+    public Edge getCurrentEdge() { return currentEdge; }
+	public Node getPreviousNode() {   return previousNode;  }
     public Node getDestinationNode() {	return destinationNode;	}
 	public void setDestinationNode(Node destinationNode) { this.destinationNode = destinationNode; }
 	public float getMaxSpeed() { return maxSpeed; }
@@ -107,14 +109,54 @@ public class Agent implements Serializable {
 	public List<Node> getCurrentPath() { return currentPath; }
 	public void setCurrentPath(List<Node> path) { this.currentPath = path; }
 	
+
+	/**
+     * Moves the agent to a neighboring edge.
+     * @param edge edge where the agent is going
+     * @return true if the move was successful, false if the edge is full
+     */
+    public boolean moveToEdge(Edge edge) {
+        if (!edge.isAvailable()) {
+            return false;
+        }
+        if (this.currentNode != null) {
+            this.previousNode = this.currentNode;
+            this.currentNode.removeAgent(this);
+            this.currentNode = null;
+        }
+        this.currentEdge = edge;
+        edge.addAgent(this);
+        return true;
+    }
+
     /**
+     * Arrive on a node, end of transit on the edge.
+     * @param node arrival node
+     */
+    public void arriveAt(Node node) {
+        // Leave the current edge
+        if (this.currentEdge != null) {
+            this.currentEdge.removeAgent(this);
+            this.currentEdge = null;
+        }
+        this.currentNode = node;
+        node.addAgent(this);
+    }
+
+    /** 
+     * @return true if the agent is on an edge
+     */
+    public boolean isInTransit() {
+        return (this.currentEdge != null);
+    }
+
+	/**
      * Automatically chooses the best output according to the agent's state.
-     * - CALM / INJURED    → optimal exit via dijkstraTime 
+     * - CALM / INJURED → optimal exit via dijkstraTime 
      * - PANICKED → nearest exit via dijkstraDistance 
      * @param graph     graph of the building
      * @return the best exit
      */
-
     private Node chooseBestExit(Graph graph) {
         Pathfinder pathfinder = new Pathfinder();
         Node bestExit = null;
@@ -143,7 +185,6 @@ public class Agent implements Serializable {
                     congestionFactor += edge.getOccupancy();
                 }
             }
-
             // 3. Apply the formula from the Jira ticket
             float score = path.size() + congestionFactor;
 
@@ -155,58 +196,12 @@ public class Agent implements Serializable {
                 bestPath = new ArrayList<>(path);
             }
         }
-
         // 5. Remove the starting node so the agent doesn't stay in place
         if (!bestPath.isEmpty()) {
             bestPath.remove(0);
         }
-
         this.currentPath = bestPath;
         return bestExit;
-    }
-
-
-
-
-	/**
-     * Moves the agent to a neighboring edge.
-     * @param edge edge where the agent is going
-     * @return true if the move was successful, false if the edge is full
-     */
-    public boolean moveToEdge(Edge edge) {
-        if (!edge.isAvailable()) {
-            return false;
-        }
-        if (this.currentNode != null) {
-            this.previousNode = this.currentNode;
-            this.currentNode.removeAgent(this);
-            this.currentNode = null;
-        }
-        this.currentEdge = edge;
-        edge.addAgent(this);
-        return true;
-    }
-
-    /**
-     * Arrive on a node, end of transit on the edge.
-     * @param node arrival node
-     */
-    public void arriveAt(Node node) {
-        // Quitte l'arête actuelle
-    	
-        if (this.currentEdge != null) {
-            this.currentEdge.removeAgent(this);
-            this.currentEdge = null;
-        }
-        this.currentNode = node;
-        node.addAgent(this);
-    }
-
-    /** 
-     * @return true if the agent is on an edge
-     */
-    public boolean isInTransit() {
-        return (this.currentEdge != null);
     }
 
     @Override
@@ -229,11 +224,6 @@ public class Agent implements Serializable {
     public int hashCode() {
         return Objects.hash(id);
     }
-    
-    public Node getPreviousNode() {
-        return previousNode;
-    }
-
 
 
 }
