@@ -67,6 +67,7 @@ public class GraphView {
      *
      * @param canvas the JavaFX canvas used for rendering the graph
      * @param graph  the underlying graph model to visualize and manipulate
+     * @param controller the controller used to delegate graph modification actions
      */
     public GraphView(Canvas canvas, Graph graph, SimulationController controller) {
         this.canvas = canvas;
