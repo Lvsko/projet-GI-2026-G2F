@@ -139,6 +139,9 @@ public class Agent implements Serializable {
             this.currentEdge.removeAgent(this);
             this.currentEdge = null;
         }
+		if (this.currentNode != null) {
+    		this.currentNode.removeAgent(this);
+		}
         this.currentNode = node;
         node.addAgent(this);
     }
