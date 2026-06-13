@@ -111,7 +111,7 @@ public class Pathfinder {
                 if (connectingEdge == null) continue;
 
                 float distance       = connectingEdge.getDistance();
-                float speedModifier  = connectingEdge.getEffectiveSpeed();
+                float speedModifier  = getEffectiveSpeed(connectingEdge);
                 float occupancyRatio = (float) connectingEdge.getOccupancy() / connectingEdge.getWidth();
                 float denominator    = speedModifier * (1.0f - occupancyRatio);
                 if (denominator <= 0 || Float.isNaN(denominator)) denominator = 0.01f; // guard NaN (#6)
@@ -152,5 +152,18 @@ public class Pathfinder {
             if (isDirectPath || isReversePath) return edge;
         }
         return null;
+    }
+
+    /**
+     * Calculates the effective speed on a given edge
+     * @param edge the edge for which the effective speed is being calculated
+     * @return the calculated effective speed
+     */
+    private float getEffectiveSpeed(Edge edge) {
+        long injuredCount = edge.getAgents().stream()
+            .filter(a -> a.getState() == model.agent.AgentState.INJURED).count();
+
+        float effective = edge.getSpeedModifier() - (0.2f * injuredCount);
+        return Math.max(effective, 0.1f);
     }
 }
