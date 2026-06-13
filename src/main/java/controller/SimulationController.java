@@ -116,7 +116,22 @@ public class SimulationController {
                 }
             }
         }
-        graph.removeNode(id);
+        List<Edge> edgesToRemove = new ArrayList<>();
+        for (Edge edge : graph.getEdges()) {
+            if (edge.getSource().equals(node) || edge.getTarget().equals(node)) {
+                edgesToRemove.add(edge);
+            }
+        }
+
+        for (Edge edge : edgesToRemove) {
+            for (Agent agent : new ArrayList<>(edge.getAgents())) {
+                Node fallback = edge.getSource().equals(node) ? edge.getTarget() : edge.getSource();
+                placeAgentOnNode(agent, fallback);
+                rerouteAgent(agent, fallback, pf);
+            }
+            graph.getEdges().remove(edge);
+        }
+        graph.getNodes().remove(node);
     }
 
     /**
@@ -127,18 +142,23 @@ public class SimulationController {
         Edge edge = graph.getEdge(id);
         if (edge == null) return;
 
-            Pathfinder pf = new Pathfinder();
+        Pathfinder pf = new Pathfinder();
         Node src = edge.getSource();
         Node tgt = edge.getTarget();
         List<Agent> allAgents = engine != null ? engine.getAgents() : new ArrayList<>();
 
         List<Agent> agentsToReroute = new ArrayList<>();
-         for (Agent agent : allAgents) {
+        for (Agent agent : allAgents) {
             if (agent.getCurrentEdge() == edge || pathUsesEdge(agent, src, tgt)) {
                 agentsToReroute.add(agent);
             }
         }
-        graph.removeEdge(id);
+
+        for (Agent agent : new ArrayList<>(edge.getAgents())) {
+            placeAgentOnNode(agent, src);
+        }
+
+        graph.getEdges().remove(edge);
 
         for (Agent agent : agentsToReroute) {
             Node from = agent.getCurrentNode();
