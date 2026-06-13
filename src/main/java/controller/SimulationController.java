@@ -279,7 +279,7 @@ public class SimulationController {
         }
         engine = new SimulationEngine(graph);
         for (Agent agent : agents) engine.addAgent(agent);
-        engine.start();
+        
     }
 
     /** Starts or resumes the simulation engine. */
