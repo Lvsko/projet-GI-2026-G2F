@@ -92,7 +92,7 @@ public class GraphView {
                         String edgeId = "E" + (edges.size() + 1);
                         Stage popup = new Stage();
                         popup.initModality(Modality.APPLICATION_MODAL);
-                        popup.setTitle("Nouvelle arête");
+                        popup.setTitle("New Edge");
                         TextField widthField    = new TextField("5");
                         TextField distanceField = new TextField("1.0");
                         TextField speedField    = new TextField("1.0");
@@ -101,15 +101,15 @@ public class GraphView {
                         directedBox.setValue(false);
                         Label errorLabel = new Label();
                         errorLabel.setStyle("-fx-text-fill: #ff6b6b;");
-                        Button createButton = new Button("Créer");
+                        Button createButton = new Button("Create");
                         createButton.setOnAction(e -> {
                             try {
                                 int w      = Integer.parseInt(widthField.getText().trim());
                                 float dist = Float.parseFloat(distanceField.getText().trim());
                                 float spd  = Float.parseFloat(speedField.getText().trim());
-                                if (w <= 0)    { errorLabel.setText("La largeur doit être > 0.");  return; }
-                                if (dist <= 0) { errorLabel.setText("La distance doit être > 0."); return; }
-                                if (spd <= 0)  { errorLabel.setText("La vitesse doit être > 0.");  return; }
+                                if (w <= 0)    { errorLabel.setText("Width must be > 0.");  return; }
+                                if (dist <= 0) { errorLabel.setText("Distance must be > 0."); return; }
+                                if (spd <= 0)  { errorLabel.setText("Speed must be > 0.");  return; }
                                 Edge newEdge = controller.addEdge(edgeId, connectSource, node, w, dist, spd, directedBox.getValue());
                                 edges.add(newEdge);
                                 connectMode   = false;
@@ -117,11 +117,11 @@ public class GraphView {
                                 drawGraph();
                                 popup.close();
                             } catch (NumberFormatException ex) {
-                                errorLabel.setText("Valeurs invalides — entrez des nombres.");
+                                errorLabel.setText("Invalid values — enter numbers.");
                             }
                         });
                         VBox layout = new VBox(10,
-                            new Label("Largeur"),        widthField,
+                            new Label("Width"),        widthField,
                             new Label("Distance"),       distanceField,
                             new Label("Speed Modifier"), speedField,
                             new Label("Directed"),       directedBox,
@@ -291,14 +291,14 @@ public class GraphView {
         final Node finalTarget = target;
         Stage popup = new Stage();
         popup.initModality(Modality.APPLICATION_MODAL);
-        popup.setTitle("Nouvel Agent");
+        popup.setTitle("New Agent");
         ComboBox<AgentState>    stateBox    = new ComboBox<>();
         ComboBox<AgentBehavior> behaviorBox = new ComboBox<>();
         ComboBox<AgentType>     typeBox     = new ComboBox<>();
         stateBox.getItems().addAll(AgentState.values());       stateBox.setValue(AgentState.CALM);
         behaviorBox.getItems().addAll(AgentBehavior.values()); behaviorBox.setValue(AgentBehavior.COOPERATIVE);
         typeBox.getItems().addAll(AgentType.values());         typeBox.setValue(AgentType.ADULT);
-        Button createButton = new Button("Créer");
+        Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             Agent agent = new Agent(
                 "agent" + System.currentTimeMillis(), finalTarget, 1.0f,
@@ -312,8 +312,8 @@ public class GraphView {
             popup.close();
         });
         VBox layout = new VBox(10,
-            new Label("État"),         stateBox,
-            new Label("Comportement"), behaviorBox,
+            new Label("State"),         stateBox,
+            new Label("Behavior"), behaviorBox,
             new Label("Type"),         typeBox,
             createButton
         );
@@ -329,7 +329,7 @@ public class GraphView {
         String id = "N" + (nodeCounter + 1);
         Stage popup = new Stage();
         popup.initModality(Modality.APPLICATION_MODAL);
-        popup.setTitle("Nouveau nœud");
+        popup.setTitle("New Node");
         TextField nameField           = new TextField("Room " + (nodeCounter + 1));
         TextField capacityField       = new TextField("10");
         TextField attractivenessField = new TextField("1.0");
@@ -345,9 +345,9 @@ public class GraphView {
                 int    capacity       = Integer.parseInt(capacityField.getText().trim());
                 float  attractiveness = Float.parseFloat(attractivenessField.getText().trim());
                 String name           = nameField.getText().trim();
-                if (name.isEmpty())      { errorLabel.setText("Le nom est requis.");             return; }
-                if (capacity <= 0)       { errorLabel.setText("La capacité doit être > 0.");     return; }
-                if (attractiveness <= 0) { errorLabel.setText("L'attractivité doit être > 0."); return; }
+                if (name.isEmpty())      { errorLabel.setText("Name is required.");             return; }
+                if (capacity <= 0)       { errorLabel.setText("Capacity must be > 0.");     return; }
+                if (attractiveness <= 0) { errorLabel.setText("Attractiveness must be > 0."); return; }
                 Node newNode = controller.addNode(
                     id, name, lastClickX - 60, lastClickY - 30,
                     capacity, statusBox.getValue(), typeBox.getValue(), attractiveness
@@ -357,15 +357,15 @@ public class GraphView {
                 drawGraph();
                 popup.close();
             } catch (NumberFormatException ex) {
-                errorLabel.setText("Valeurs invalides — entrez des nombres.");
+                errorLabel.setText("Invalid values — enter numbers.");
             }
         });
         VBox layout = new VBox(10,
-            new Label("Nom"),          nameField,
+            new Label("Name"),          nameField,
             new Label("Type"),         typeBox,
-            new Label("Statut"),       statusBox,
-            new Label("Capacité"),     capacityField,
-            new Label("Attractivité"), attractivenessField,
+            new Label("Status"),       statusBox,
+            new Label("Capacity"),     capacityField,
+            new Label("Attractiveness"), attractivenessField,
             createButton, errorLabel
         );
         layout.setStyle("-fx-padding: 10;");
@@ -424,7 +424,7 @@ public class GraphView {
 
         if (connectMode) {
             gc.setFill(Color.DARKBLUE);
-            gc.fillText("Mode connexion : cliquez sur le nœud cible (clic dans le vide pour annuler)", 10, 15);
+            gc.fillText("Connection mode: click on target node (click in empty space to cancel))", 10, 15);
         }
 
         // Draw edges
