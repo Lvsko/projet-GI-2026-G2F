@@ -148,7 +148,7 @@ public class Menu {
         }
 
         for (int i = 0; i < count; i++) {
-            Agent agent = new Agent("agent" + (agents.size() + i), startNode, speed, AgentState.CALM, AgentBehavior.COOPERATIVE, type, 0.5f, this.graph);
+            Agent agent = new Agent("agent" + (agents.size() + i), startNode, speed, AgentState.CALM, AgentBehavior.COOPERATIVE, type, 0.5f);
             this.agents.add(agent);
             this.engine.addAgent(agent);
         }

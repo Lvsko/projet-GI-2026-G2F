@@ -252,7 +252,7 @@ public class ConfigView {
                     agents.add(new Agent(
                         "agent_" + agents.size(), startNode, 1.0f,
                         agentState.getValue(), agentBehavior.getValue(), agentType.getValue(),
-                        0.5f, graph
+                        0.5f
                     ));
                 }
                 agentStatus.setText(count + " agent(s) ajouté(s) sur '" + startNode.getId() + "'.");

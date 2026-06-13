@@ -303,7 +303,7 @@ public class GraphView {
             Agent agent = new Agent(
                 "agent" + System.currentTimeMillis(), finalTarget, 1.0f,
                 stateBox.getValue(), behaviorBox.getValue(), typeBox.getValue(),
-                0.5f, graph
+                0.5f
             );
             agents.add(agent);
             if (engine != null) engine.addAgent(agent);
@@ -560,7 +560,6 @@ public class GraphView {
     
         }
         // Selection info is now displayed in the MainView stats bar (KAN-41)
-    }
 
     /**
      * Removes an agent from the local agent list of this view.

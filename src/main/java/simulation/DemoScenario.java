@@ -144,7 +144,7 @@ public class DemoScenario {
                         agentState = AgentState.INJURED; 
                     }
                 }
-                agents.add(new Agent("agent_" + node.getId() + "_" + i, node, 1.0f, agentState, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f, g));
+                agents.add(new Agent("agent_" + node.getId() + "_" + i, node, 1.0f, agentState, AgentBehavior.COOPERATIVE, AgentType.ADULT, 0.5f));
                 index++;
             }
         }
