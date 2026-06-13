@@ -364,7 +364,7 @@ public class ConfigView {
         mainLayout.setStyle("-fx-background-color: #424242;");
 
         // No fixed scene size — window keeps its current dimensions on navigation (KAN-39)
-        Scene scene = new Scene(mainLayout);
+        Scene scene = new Scene(mainLayout, stage.getWidth(), stage.getHeight());
         stage.setScene(scene);
         stage.show();
 
