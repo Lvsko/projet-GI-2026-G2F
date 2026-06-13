@@ -160,7 +160,7 @@ public class SimulationEngine {
                 Edge edge     = findEdge(agent.getCurrentNode(), nextNode);
 
                 if (edge != null) {
-                    if (edge.isAvailable() && agent.moveToEdge(edge)) {
+                    if (isEdgeAvailable(edge) && agent.moveToEdge(edge)) {
                         statistics.recordAgentPassedEdge(edge);
                         agent.getCurrentPath().remove(0);
                         stuckCounters.put(agent, 0);
@@ -250,6 +250,10 @@ public class SimulationEngine {
                 }
             }
         }
+    }
+    
+    private boolean isEdgeAvailable(Edge edge) {
+        return edge.getAgents().size() < edge.getWidth();
     }
 
 }
