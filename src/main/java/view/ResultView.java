@@ -136,7 +136,7 @@ public class ResultView {
         ScrollPane scroll = new ScrollPane(root);
         scroll.setStyle("-fx-background-color: #424242; -fx-background: #424242;");
         scroll.setFitToWidth(true);
-        return new Scene(scroll);
+        return new Scene(scroll, stage.getWidth(), stage.getHeight());
     }
 
     /**
