@@ -47,11 +47,11 @@ public class ResultView {
         Graph graph = engine.getGraph();
 
         // ── Title ────────────────────────────────────────────────────────────────
-        Label title = new Label("RÉSULTATS");
+        Label title = new Label("RESULTS");
         title.setFont(Font.font("Georgia", FontWeight.BOLD, 48));
         title.setTextFill(Color.web("#2E7D32"));
 
-        Label subtitle = new Label("SIMULATION D'ÉVACUATION");
+        Label subtitle = new Label("EVACUATION SIMULATION");
         subtitle.setFont(Font.font("Arial", 13));
         subtitle.setTextFill(Color.web("#bdbdbd"));
 
@@ -59,16 +59,16 @@ public class ResultView {
         titleBox.setAlignment(Pos.CENTER);
 
         // ── Heatmap ──────────────────────────────────────────────────────────────
-        Label heatmapTitle = new Label("CARTE DE CONGESTION");
+        Label heatmapTitle = new Label("CONGESTION MAP");
         heatmapTitle.setFont(Font.font("Georgia", FontWeight.BOLD, 15));
         heatmapTitle.setTextFill(Color.web("#2E7D32"));
 
         Canvas heatmapCanvas = new Canvas(520, 280);
         drawHeatmap(heatmapCanvas, graph, stats);
 
-        Label lgGreen  = legendLabel("● Fluide",       "#4CAF50");
-        Label lgOrange = legendLabel("● Congestionné", "#FF9800");
-        Label lgRed    = legendLabel("● Saturé",       "#F44336");
+        Label lgGreen  = legendLabel("● Fluid",       "#4CAF50");
+        Label lgOrange = legendLabel("● Congested", "#FF9800");
+        Label lgRed    = legendLabel("● Saturated",       "#F44336");
         HBox legend = new HBox(16, lgGreen, lgOrange, lgRed);
 
         VBox heatmapBox = new VBox(8, heatmapTitle, heatmapCanvas, legend);
@@ -76,9 +76,9 @@ public class ResultView {
         heatmapBox.setMaxWidth(560);
 
         // ── Statistics ───────────────────────────────────────────────────────────
-        Label ticksLabel     = statLabel("⏱ Temps d'évacuation", stats.getTotalTicks() + " ticks");
-        Label evacuatedLabel = statLabel("👥 Agents évacués",     String.valueOf(stats.getEvacuatedCount()));
-        Label avgTimeLabel   = statLabel("⌀ Temps moyen",
+        Label ticksLabel     = statLabel("⏱ Evacuation Time", stats.getTotalTicks() + " ticks");
+        Label evacuatedLabel = statLabel("👥 Evacuated Agents",     String.valueOf(stats.getEvacuatedCount()));
+        Label avgTimeLabel   = statLabel("⌀ Average Time",
                 String.format("%.1f", stats.getAverageEvacuationTime()) + " ticks");
 
         VBox statsBox = new VBox(16, ticksLabel, evacuatedLabel, avgTimeLabel);
@@ -103,12 +103,12 @@ public class ResultView {
         analysisBox.setMaxWidth(400);
 
         // ── Buttons ──────────────────────────────────────────────────────────────
-        Button saveButton = new Button("💾 Sauvegarder ce run");
+        Button saveButton = new Button("💾 Save this run");
         saveButton.setFont(Font.font("Georgia", FontWeight.BOLD, 13));
         saveButton.setStyle("-fx-background-color: #1565C0; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 10 20 10 20;");
         saveButton.setOnAction(e -> saveStats(stage, stats));
 
-        Button compareButton = new Button("📊 Comparer avec un run précédent");
+        Button compareButton = new Button("📊 Compare with a previous run");
         compareButton.setFont(Font.font("Georgia", FontWeight.BOLD, 13));
         compareButton.setStyle("-fx-background-color: #6A1B9A; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 10 20 10 20;");
         compareButton.setOnAction(e -> {
@@ -116,7 +116,7 @@ public class ResultView {
             if (previous != null) showComparison(previous, stats);
         });
 
-        Button retourButton = new Button("← Retour à l'accueil");
+        Button retourButton = new Button("← Back to home");
         retourButton.setFont(Font.font("Georgia", FontWeight.BOLD, 14));
         retourButton.setStyle("-fx-background-color: #2E7D32; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 12 30 12 30;");
         // Reuse the same stage to avoid window size jump on navigation (KAN-39)
@@ -154,7 +154,7 @@ public class ResultView {
 
         if (graph.getNodes().isEmpty()) {
             gc.setFill(Color.web("#9e9e9e"));
-            gc.fillText("Aucun nœud à afficher", 20, 40);
+            gc.fillText("No nodes to display", 20, 40);
             return;
         }
 
@@ -229,15 +229,15 @@ public class ResultView {
      */
     private void saveStats(Stage stage, Statistics stats) {
         FileChooser fc = new FileChooser();
-        fc.setTitle("Sauvegarder le run");
-        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichier EXIT", "*.exit"));
+        fc.setTitle("Save this run");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("EXIT File", "*.exit"));
         fc.setInitialFileName("run.exit");
         File file = fc.showSaveDialog(stage);
         if (file == null) return;
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
             oos.writeObject(stats);
         } catch (IOException e) {
-            System.err.println("Erreur sauvegarde : " + e.getMessage());
+            System.err.println("Save error: " + e.getMessage());
         }
     }
 
@@ -250,14 +250,14 @@ public class ResultView {
      */
     private Statistics loadStats(Stage stage) {
         FileChooser fc = new FileChooser();
-        fc.setTitle("Charger un run précédent");
-        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichier EXIT", "*.exit"));
+        fc.setTitle("Load previous run");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("EXIT File", "*.exit"));
         File file = fc.showOpenDialog(stage);
         if (file == null) return null;
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
             return (Statistics) ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
-            System.err.println("Erreur chargement : " + e.getMessage());
+            System.err.println("Load error: " + e.getMessage());
             return null;
         }
     }
@@ -269,7 +269,7 @@ public class ResultView {
      * @param run2 the current simulation run to compare against
      */
     private void showComparison(Statistics run1, Statistics run2) {
-        Label title = new Label("COMPARAISON DES RUNS");
+        Label title = new Label("RUN COMPARISON");
         title.setFont(Font.font("Georgia", FontWeight.BOLD, 22));
         title.setTextFill(Color.web("#2E7D32"));
 
@@ -279,7 +279,7 @@ public class ResultView {
         grid.setPadding(new Insets(20));
         grid.setStyle("-fx-background-color: #303030; -fx-background-radius: 10;");
 
-        grid.add(headerLabel("MÉTRIQUE"), 0, 0);
+        grid.add(headerLabel("METRIC"), 0, 0);
         grid.add(headerLabel("RUN 1"),    1, 0);
         grid.add(headerLabel("RUN 2"),    2, 0);
         grid.add(new Separator(), 0, 1);
@@ -291,22 +291,22 @@ public class ResultView {
         grid.add(compareLabel(run2.getTotalTicks() + " ticks",
                 run1.getTotalTicks() > run2.getTotalTicks()), 2, 2);
 
-        grid.add(cellLabel("👥 Évacués"), 0, 3);
+        grid.add(cellLabel("👥 Evacuated"), 0, 3);
         grid.add(cellLabel(String.valueOf(run1.getEvacuatedCount())), 1, 3);
         grid.add(compareLabel(String.valueOf(run2.getEvacuatedCount()),
                 run1.getEvacuatedCount() < run2.getEvacuatedCount()), 2, 3);
 
-        grid.add(cellLabel("⌀ Temps moyen"), 0, 4);
+        grid.add(cellLabel("⌀ Average Time"), 0, 4);
         grid.add(cellLabel(String.format("%.1f", run1.getAverageEvacuationTime()) + " ticks"), 1, 4);
         grid.add(compareLabel(String.format("%.1f", run2.getAverageEvacuationTime()) + " ticks",
                 run1.getAverageEvacuationTime() > run2.getAverageEvacuationTime()), 2, 4);
 
-        grid.add(cellLabel("🚧 Goulots"), 0, 5);
-        grid.add(cellLabel(run1.getBottlenecks().size() + " arêtes"), 1, 5);
-        grid.add(compareLabel(run2.getBottlenecks().size() + " arêtes",
+        grid.add(cellLabel("🚧 Bottlenecks"), 0, 5);
+        grid.add(cellLabel(run1.getBottlenecks().size() + " edges"), 1, 5);
+        grid.add(compareLabel(run2.getBottlenecks().size() + " edges",
                 run1.getBottlenecks().size() > run2.getBottlenecks().size()), 2, 5);
 
-        Button closeButton = new Button("Fermer");
+        Button closeButton = new Button("Close");
         closeButton.setStyle("-fx-background-color: #2E7D32; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 10 20 10 20;");
 
         Stage compStage = new Stage();
@@ -317,7 +317,7 @@ public class ResultView {
         root.setStyle("-fx-background-color: #424242;");
         root.setPadding(new Insets(30));
 
-        compStage.setTitle("Comparaison");
+        compStage.setTitle("Comparison");
         compStage.setScene(new Scene(root, 550, 420));
         compStage.show();
     }
