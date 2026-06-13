@@ -35,6 +35,9 @@ public class MainView extends Application {
     private List<Agent> agents;
     private String source;
 
+    // ── Constructors ──────────────────────────────────────────────────────────
+
+    /** Default no-arg constructor required by JavaFX {@link Application}. */
     public MainView() {}
 
     /**
@@ -54,7 +57,7 @@ public class MainView extends Application {
      *
      * @param graph  the graph to simulate
      * @param agents the list of agents to place in the simulation
-     * @param source the identifier of the view that launched this one ("demo" or other)
+     * @param source the identifier of the view that launched this one ("demo" or "config")
      */
     public MainView(Graph graph, List<Agent> agents, String source) {
         this.graph  = graph;
@@ -62,48 +65,26 @@ public class MainView extends Application {
         this.source = source;
     }
 
-    /**
-     * Creates a styled button with the given label and background color.
-     *
-     * @param text the button label
-     * @param bg   the CSS background color string
-     * @return the configured Button
-     */
-    private Button styledButton(String text, String bg) {
-        Button btn = new Button(text);
-        btn.setFont(Font.font("Arial", 12));
-        btn.setStyle(
-            "-fx-background-color: " + bg + ";" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 6;" +
-            "-fx-cursor: hand;" +
-            "-fx-padding: 6 14 6 14;"
-        );
-        return btn;
-    }
+    // ── Public methods ────────────────────────────────────────────────────────
 
     @Override
     public void start(Stage stage) {
-
-
         // ── Canvas — bound to stage size so it fills available space (KAN-39) ──
         Canvas canvas = new Canvas();
         canvas.widthProperty().bind(stage.widthProperty().subtract(250));
         canvas.heightProperty().bind(stage.heightProperty().subtract(100));
 
         SimulationController controller = new SimulationController(graph, stage);
-
-         GraphView renderer = new GraphView(canvas, graph, controller);
+        GraphView renderer = new GraphView(canvas, graph, controller);
         canvas.widthProperty().addListener((obs, oldVal, newVal) -> renderer.drawGraph());
         canvas.heightProperty().addListener((obs, oldVal, newVal) -> renderer.drawGraph());
         renderer.drawGraph();
 
         controller.launchSimulation(agents);
-        
         renderer.setEngine(controller.getEngine());
         SimulationEngine engine = controller.getEngine();
-        
-        // ── Stats panel ──────────────────────────────────────────────────────────
+
+        // ── Stats panel ───────────────────────────────────────────────────────
         String statStyle  = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial; -fx-font-size: 13;";
         String titleStyle = "-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 15;";
 
@@ -114,7 +95,6 @@ public class MainView extends Application {
         Label calmLabel      = new Label("Calmes : 0");
         Label panickedLabel  = new Label("Paniqués : 0");
         Label injuredLabel   = new Label("Blessés : 0");
-
         tickLabel.setStyle(statStyle);
         evacuatedLabel.setStyle(statStyle);
         remainingLabel.setStyle(statStyle);
@@ -133,7 +113,7 @@ public class MainView extends Application {
         statsPanel.setMinWidth(200);
         statsPanel.setStyle("-fx-background-color: #303030;");
 
-        // ── Speed slider ─────────────────────────────────────────────────────────
+        // ── Speed slider ──────────────────────────────────────────────────────
         Slider speedSlider = new Slider(1, 10, 1);
         speedSlider.setShowTickMarks(true);
         speedSlider.setShowTickLabels(true);
@@ -141,37 +121,34 @@ public class MainView extends Application {
         speedSlider.setSnapToTicks(false);
         speedSlider.setPrefWidth(180);
         speedSlider.setStyle("-fx-control-inner-background: #303030;");
-
         Label speedLabel = new Label("Vitesse : 1 tick/s");
         speedLabel.setStyle("-fx-text-fill: #e0e0e0; -fx-font-size: 11;");
-
         speedSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
             double tps = newVal.doubleValue();
             controller.setSpeed(tps);
             speedLabel.setText(String.format("Vitesse : %.1f tick/s", tps));
         });
-
         VBox speedBox = new VBox(4, speedLabel, speedSlider);
         speedBox.setAlignment(Pos.CENTER_LEFT);
 
-        // ── Stats updater (shared by timer and step button) ───────────────────────
+        // ── Stats updater (shared by timer and step button) ───────────────────
         Runnable updateStats = () -> {
             long calm     = engine.getAgents().stream().filter(a -> a.getState() == AgentState.CALM).count();
             long panicked = engine.getAgents().stream().filter(a -> a.getState() == AgentState.PANICKED).count();
             long injured  = engine.getAgents().stream().filter(a -> a.getState() == AgentState.INJURED).count();
-            tickLabel.setText("Tick : "      + engine.getCurrentTick());
-            evacuatedLabel.setText("Évacués : " + engine.getStatistics().getEvacuatedCount());
+            tickLabel.setText("Tick : "       + engine.getCurrentTick());
+            evacuatedLabel.setText("Évacués : "  + engine.getStatistics().getEvacuatedCount());
             remainingLabel.setText("Restants : " + engine.getAgents().size());
-            calmLabel.setText("Calmes : "    + calm);
-            panickedLabel.setText("Paniqués : " + panicked);
-            injuredLabel.setText("Blessés : "   + injured);
+            calmLabel.setText("Calmes : "     + calm);
+            panickedLabel.setText("Paniqués : "  + panicked);
+            injuredLabel.setText("Blessés : "    + injured);
         };
 
         controller.startTimer(renderer, updateStats);
         stage.setOnCloseRequest(e -> controller.stopTimer());
 
-
-        // ── Buttons ───────────────────────────────────────────────────────────────
+        // ── Buttons ───────────────────────────────────────────────────────────
+        // Engine is not running on load — user starts the simulation manually
         Button pauseButton = styledButton("▶ Démarrer", "#2E7D32");
         pauseButton.setOnAction(e -> {
             if (engine.isRunning()) {
@@ -239,7 +216,7 @@ public class MainView extends Application {
         toolbar.setStyle("-fx-background-color: #303030;");
 
         // ── Layout — StackPane absorbs extra space so stats panel doesn't
-        //    stick to the canvas on wide screens (KAN-40) ──────────────────────────
+        //    stick to the canvas on wide screens (KAN-40) ─────────────────────
         StackPane canvasWrapper = new StackPane(canvas);
         HBox mainContent = new HBox(canvasWrapper, statsPanel);
         HBox.setHgrow(canvasWrapper, Priority.ALWAYS);
@@ -254,7 +231,34 @@ public class MainView extends Application {
         stage.show();
     }
 
+    /**
+     * JavaFX application entry point. Delegates to {@link Application#launch(String...)}.
+     *
+     * @param args command-line arguments (not used)
+     */
     public static void main(String[] args) {
         launch();
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Creates a styled button with the given label and background color.
+     *
+     * @param text the button label
+     * @param bg   the CSS background color string
+     * @return the configured {@link Button}
+     */
+    private Button styledButton(String text, String bg) {
+        Button btn = new Button(text);
+        btn.setFont(Font.font("Arial", 12));
+        btn.setStyle(
+            "-fx-background-color: " + bg + ";" +
+            "-fx-text-fill: white;" +
+            "-fx-background-radius: 6;" +
+            "-fx-cursor: hand;" +
+            "-fx-padding: 6 14 6 14;"
+        );
+        return btn;
     }
 }
