@@ -7,9 +7,6 @@ import javafx.stage.Stage;
 import model.Edge;
 import model.Graph;
 import model.agent.Agent;
-import model.agent.AgentBehavior;
-import model.agent.AgentState;
-import model.agent.AgentType;
 import model.node.Node;
 import model.node.NodeStatus;
 import model.node.NodeType;
@@ -18,7 +15,6 @@ import simulation.SimulationEngine;
 import simulation.SimulationState;
 import view.GraphView;
 import view.ResultView;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,7 +23,9 @@ import java.util.Random;
 
 /**
  * Controller linking the view and the simulation engine.
- * Handles all logic previously scattered in ConfigView, GraphView and MainView.
+ * Centralises all logic previously scattered across ConfigView, GraphView and MainView:
+ * graph edition, agent management, save/load, random generation, and the animation loop.
+ *
  * @author Clement
  */
 public class SimulationController {
@@ -38,25 +36,28 @@ public class SimulationController {
     private AnimationTimer timer;
     private Stage stage;
 
-    // Tick management
-    private long[] tickInterval    = { 200_000_000L };
+    private long[] tickInterval    = { 1_000_000_000L };
     private int[]  ticksNoProgress = { 0 };
     private int[]  lastEvacuated   = { 0 };
 
+    // ── Constructor ───────────────────────────────────────────────────────────
+
     /**
      * Creates a SimulationController for the given graph and stage.
+     *
      * @param graph the building graph to control
      * @param stage the JavaFX stage used for file dialogs and scene transitions
      */
     public SimulationController(Graph graph, Stage stage) {
-        this.graph  = graph;
-        this.stage  = stage;
+        this.graph = graph;
+        this.stage = stage;
     }
 
-    // Graph edition (from ConfigView) 
+    // ── Graph edition ─────────────────────────────────────────────────────────
 
     /**
      * Creates and adds a node to the graph.
+     *
      * @param id             unique identifier of the node
      * @param name           display name of the node
      * @param x              X coordinate of the node on the canvas
@@ -65,7 +66,7 @@ public class SimulationController {
      * @param status         accessibility status of the node
      * @param type           type of the node (ROOM, CORRIDOR, EXIT, STAIRCASE)
      * @param attractiveness attractiveness factor influencing agent pathfinding
-     * @return the created Node instance
+     * @return the created {@link Node} instance
      */
     public Node addNode(String id, String name, double x, double y,
                         int capacity, NodeStatus status, NodeType type, float attractiveness) {
@@ -76,14 +77,15 @@ public class SimulationController {
 
     /**
      * Creates and adds an edge to the graph.
+     *
      * @param id            unique identifier of the edge
      * @param source        source node of the edge
      * @param target        target node of the edge
      * @param width         maximum number of agents that can traverse the edge simultaneously
      * @param distance      physical length of the edge, used in pathfinding cost calculation
      * @param speedModifier base speed modifier applied to agents traversing this edge
-     * @param directed      true if the edge is one-way, false if bidirectional
-     * @return the created Edge instance
+     * @param directed      {@code true} if the edge is one-way, {@code false} if bidirectional
+     * @return the created {@link Edge} instance
      */
     public Edge addEdge(String id, Node source, Node target,
                         int width, float distance, float speedModifier, boolean directed) {
@@ -93,7 +95,9 @@ public class SimulationController {
     }
 
     /**
-     * Removes a node and reroutes agents if needed.
+     * Removes a node from the graph and reroutes any agents currently on it or
+     * on one of its incident edges.
+     *
      * @param id the unique identifier of the node to remove
      */
     public void removeNode(String id) {
@@ -116,37 +120,40 @@ public class SimulationController {
                 }
             }
         }
+
         List<Edge> edgesToRemove = new ArrayList<>();
         for (Edge edge : graph.getEdges()) {
             if (edge.getSource().equals(node) || edge.getTarget().equals(node)) {
                 edgesToRemove.add(edge);
             }
         }
-
         for (Edge edge : edgesToRemove) {
+            Node fallback = edge.getSource().equals(node) ? edge.getTarget() : edge.getSource();
             for (Agent agent : new ArrayList<>(edge.getAgents())) {
-                Node fallback = edge.getSource().equals(node) ? edge.getTarget() : edge.getSource();
                 placeAgentOnNode(agent, fallback);
                 rerouteAgent(agent, fallback, pf);
             }
-            graph.getEdges().remove(edge);
+            graph.removeEdge(edge.getId());
         }
-        graph.getNodes().remove(node);
+
+        graph.removeNode(id);
     }
 
     /**
-     * Removes an edge and reroutes agents on it or using it.
+     * Removes an edge from the graph and reroutes agents that were on it or
+     * whose planned path used it.
+     *
      * @param id the unique identifier of the edge to remove
      */
     public void removeEdge(String id) {
         Edge edge = graph.getEdge(id);
         if (edge == null) return;
 
-        Pathfinder pf = new Pathfinder();
+        Pathfinder pf  = new Pathfinder();
         Node src = edge.getSource();
         Node tgt = edge.getTarget();
-        List<Agent> allAgents = engine != null ? engine.getAgents() : new ArrayList<>();
 
+        List<Agent> allAgents = engine != null ? engine.getAgents() : new ArrayList<>();
         List<Agent> agentsToReroute = new ArrayList<>();
         for (Agent agent : allAgents) {
             if (agent.getCurrentEdge() == edge || pathUsesEdge(agent, src, tgt)) {
@@ -158,37 +165,33 @@ public class SimulationController {
             placeAgentOnNode(agent, src);
         }
 
-        graph.getEdges().remove(edge);
+        graph.removeEdge(id);
 
         for (Agent agent : agentsToReroute) {
             Node from = agent.getCurrentNode();
-            if (from != null) {
-                rerouteAgent(agent, from, pf);
-            }
+            if (from != null) rerouteAgent(agent, from, pf);
         }
     }
 
     /**
-     * Removes an agent
-     * @param agent the agent  to remove
+     * Removes an agent from the simulation or, if the engine is not running,
+     * detaches it from its current node and edge.
+     *
+     * @param agent the agent to remove
      */
     public void removeAgent(Agent agent) {
         if (engine != null) {
             engine.removeAgent(agent);
-         } else {
-            if (agent.getCurrentNode() != null) {
-                agent.getCurrentNode().removeAgent(agent);
-            }
-            if (agent.getCurrentEdge() != null) {
-                agent.getCurrentEdge().removeAgent(agent);
-            }    
+        } else {
+            if (agent.getCurrentNode() != null) agent.getCurrentNode().removeAgent(agent);
+            if (agent.getCurrentEdge() != null) agent.getCurrentEdge().removeAgent(agent);
         }
     }
 
-    // Save / Load (from ConfigView) 
+    // ── Save / Load ───────────────────────────────────────────────────────────
 
     /**
-     * Saves the current graph to a .exit file.
+     * Saves the current graph to a {@code .exit} file chosen by the user.
      */
     public void savePlan() {
         FileChooser fc = new FileChooser();
@@ -199,13 +202,14 @@ public class SimulationController {
         try {
             new SimulationState(graph, new ArrayList<>(), 0).save(file.getAbsolutePath());
         } catch (IOException e) {
-            showError("Erreur sauvegarde", e.getMessage());
+            showError("Save error", e.getMessage());
         }
     }
 
     /**
-     * Loads a graph from a .exit file.
-     * @return the loaded graph, or null if loading failed
+     * Loads a graph from a {@code .exit} file chosen by the user.
+     *
+     * @return the loaded {@link Graph}, or {@code null} if loading failed or was cancelled
      */
     public Graph loadPlan() {
         FileChooser fc = new FileChooser();
@@ -218,17 +222,18 @@ public class SimulationController {
             this.graph = state.getGraph();
             return this.graph;
         } catch (Exception e) {
-            showError("Erreur chargement", e.getMessage());
+            showError("Load error", e.getMessage());
             return null;
         }
     }
 
-    // Random generation (from ConfigView)
+    // ── Random generation ─────────────────────────────────────────────────────
 
     /**
-     * Generates n random nodes connected into a spanning tree.
-     * Last node is always EXIT.
-     * @param n number of nodes to generate (2-100)
+     * Generates {@code n} random nodes connected into a spanning tree.
+     * The last node is always of type EXIT.
+     *
+     * @param n number of nodes to generate
      */
     public void generateRandom(int n) {
         Random rand = new Random();
@@ -253,78 +258,81 @@ public class SimulationController {
         }
     }
 
-    // Simulation lifecycle (from MainView) 
+    // ── Simulation lifecycle ──────────────────────────────────────────────────
 
     /**
-     * Initializes the engine with the given agents and starts the simulation.
+     * Validates the graph and agent list, then initialises the engine.
+     * Shows an error dialog if validation fails.
+     *
      * @param agents the list of agents to add to the simulation
      */
     public void launchSimulation(List<Agent> agents) {
         boolean hasExit = graph.getNodes().stream()
             .anyMatch(n -> n.getType() == NodeType.EXIT);
         if (!hasExit) {
-            showError("Aucun nœud EXIT", "Ajoutez au moins un nœud de type EXIT avant de lancer la simulation.");
+            showError("No EXIT node", "Add at least one node of type EXIT before launching.");
             return;
         }
         if (agents == null || agents.isEmpty()) {
-            showError("Aucun agent", "Ajoutez au moins un agent avant de lancer la simulation.");
+            showError("No agents", "Add at least one agent before launching.");
             return;
         }
         engine = new SimulationEngine(graph);
-        for (Agent agent : agents) {
-            engine.addAgent(agent);
-        }
+        for (Agent agent : agents) engine.addAgent(agent);
         engine.start();
     }
 
-    /** Starts or resumes the simulation. */
+    /** Starts or resumes the simulation engine. */
     public void start() {
         if (engine != null) engine.start();
     }
 
-    /** Pauses the simulation. */
+    /** Pauses the simulation engine. */
     public void pause() {
         if (engine != null) engine.pause();
     }
 
-    /** Advances the simulation by one tick. */
+    /** Advances the simulation by exactly one tick. */
     public void step() {
         if (engine != null) engine.step();
     }
 
-    /** Resets the simulation. */
+    /** Resets the simulation engine to its initial state. */
     public void reset() {
         if (engine != null) engine.reset();
     }
 
     /**
-     * Sets the tick interval from a speed value (1–10).
-     * @param speed ticks per second
+     * Sets the tick interval from a speed value expressed in ticks per second.
+     *
+     * @param speed desired speed in ticks per second (e.g. 1.0 to 10.0)
      */
     public void setSpeed(double speed) {
         tickInterval[0] = (long)(1_000_000_000L / speed);
     }
 
     /**
-     * Starts the AnimationTimer loop.
-     * Transitions to ResultView when all agents are evacuated or simulation is stuck.
-     * @param renderer the GraphView to redraw each tick
-     * @param onStatsUpdate callback to refresh stats labels
+     * Starts the JavaFX {@link AnimationTimer} loop.
+     *
+     * @param renderer      the {@link GraphView} to redraw on each tick
+     * @param onStatsUpdate callback invoked after each tick to refresh stats labels;
+     *                      may be {@code null}
      */
     public void startTimer(GraphView renderer, Runnable onStatsUpdate) {
         this.renderer = renderer;
         timer = new AnimationTimer() {
             private long lastTick = 0;
+
             @Override
             public void handle(long now) {
                 if (!engine.isRunning()) return;
                 if (now - lastTick < tickInterval[0]) return;
+
                 engine.step();
                 renderer.drawGraph();
                 lastTick = now;
                 if (onStatsUpdate != null) onStatsUpdate.run();
 
-                // Timeout : 100 ticks without evacuation progress
                 int evacCount = engine.getStatistics().getEvacuatedCount();
                 if (evacCount > lastEvacuated[0]) {
                     lastEvacuated[0]   = evacCount;
@@ -336,9 +344,9 @@ public class SimulationController {
                     engine.pause();
                     this.stop();
                     Alert alert = new Alert(Alert.AlertType.WARNING);
-                    alert.setTitle("Simulation bloquée");
-                    alert.setHeaderText("100 ticks sans progression");
-                    alert.setContentText("Des agents ne peuvent pas atteindre une sortie.");
+                    alert.setTitle("Simulation stuck");
+                    alert.setHeaderText("100 ticks with no progress");
+                    alert.setContentText("Some agents cannot reach an EXIT node.");
                     alert.showAndWait();
                     stage.setScene(new ResultView().createScene(stage, engine));
                     return;
@@ -353,18 +361,42 @@ public class SimulationController {
         timer.start();
     }
 
-    /** Stops the AnimationTimer. */
+    /** Stops the {@link AnimationTimer}. */
     public void stopTimer() {
         if (timer != null) timer.stop();
     }
 
-    // Pathfinding helpers (from GraphView)
+    // ── Getters / Setters ─────────────────────────────────────────────────────
 
     /**
-     * Reroutes an agent from a given node toward its destination.
+     * Returns the graph currently managed by this controller.
+     *
+     * @return the current {@link Graph}
+     */
+    public Graph getGraph() { return graph; }
+
+    /**
+     * Returns the simulation engine, or {@code null} if not yet initialised.
+     *
+     * @return the current {@link SimulationEngine}
+     */
+    public SimulationEngine getEngine() { return engine; }
+
+    /**
+     * Updates the JavaFX stage used for dialogs and scene transitions.
+     *
+     * @param stage the new {@link Stage}
+     */
+    public void setStage(Stage stage) { this.stage = stage; }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Recalculates and assigns a new path for the given agent from the specified node.
+     *
      * @param agent the agent to reroute
      * @param from  the node from which to recalculate the path
-     * @param pf    the Pathfinder instance to use
+     * @param pf    the {@link Pathfinder} instance to use
      */
     private void rerouteAgent(Agent agent, Node from, Pathfinder pf) {
         if (from == null || agent.getDestinationNode() == null) return;
@@ -374,11 +406,12 @@ public class SimulationController {
     }
 
     /**
-     * Checks whether an agent's path uses a given edge.
-     * @param agent the agent whose path is being analyzed
+     * Checks whether an agent's current planned path uses a given edge (in either direction).
+     *
+     * @param agent the agent whose path is being analysed
      * @param src   one endpoint of the edge
      * @param tgt   the other endpoint of the edge
-     * @return true if the agent's path uses the edge, false otherwise
+     * @return {@code true} if the agent's path uses the edge
      */
     private boolean pathUsesEdge(Agent agent, Node src, Node tgt) {
         List<Node> path = agent.getCurrentPath();
@@ -396,6 +429,12 @@ public class SimulationController {
         return false;
     }
 
+    /**
+     * Detaches an agent from its current edge and node, then places it on the target node.
+     *
+     * @param agent the agent to relocate
+     * @param node  the node on which to place the agent
+     */
     private void placeAgentOnNode(Agent agent, Node node) {
         if (agent.getCurrentEdge() != null) {
             agent.getCurrentEdge().getAgents().remove(agent);
@@ -408,24 +447,17 @@ public class SimulationController {
         node.getAgents().add(agent);
     }
 
-    // Helpers
-
     /**
-     * Displays an error alert dialog.
-     * @param header  the alert header text describing the error type
-     * @param content the alert content text giving details about the error
+     * Displays a JavaFX error alert dialog.
+     *
+     * @param header  short description of the error type
+     * @param content detailed error message
      */
     private void showError(String header, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Erreur");
+        alert.setTitle("Error");
         alert.setHeaderText(header);
         alert.setContentText(content);
         alert.showAndWait();
     }
-
-    // Getters
-
-    public Graph getGraph()            { return graph; }
-    public SimulationEngine getEngine(){ return engine; }
-    public void setStage(Stage stage)  { this.stage = stage; }
 }
