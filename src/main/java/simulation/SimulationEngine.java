@@ -101,6 +101,12 @@ public class SimulationEngine {
      * @param agent the agent to add to the simulation
      */
     public void addAgent(Agent agent) {
+        if (agent.getDestinationNode() == null) {
+            agent.setDestinationNode(pathfinder.chooseBestExit(agent, graph));
+        }
+        if (agent.getCurrentNode() != null && !agent.getCurrentNode().getAgents().contains(agent)) {
+              agent.getCurrentNode().getAgents().add(agent);
+        }
         agents.add(agent);
         tickCounters.put(agent, 0);
         stuckCounters.put(agent, 0);
