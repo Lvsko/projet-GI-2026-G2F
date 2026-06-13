@@ -1,5 +1,6 @@
 package simulation;
 
+import model.agent.Agent;
 import model.Graph;
 import model.Edge;
 import model.node.Node;
@@ -201,6 +202,16 @@ public class Pathfinder {
 
         agent.setCurrentPath(bestPath);
         return bestExit;
+    }
+
+    private List<Node> getNodesByType(Graph graph, model.node.NodeType type) {
+        List<Node> result = new ArrayList<>();
+        for (Node node : graph.getNodes()) {
+            if (node.getType() == type) {
+                result.add(node);
+            }
+        }
+        return result;
     }
 
     /**
