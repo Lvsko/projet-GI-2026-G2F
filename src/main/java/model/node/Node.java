@@ -44,13 +44,6 @@ public class Node implements Serializable {
     }
 
     /** 
-     * @return true if there are more agents than the max capacity 
-     */
-    public boolean isOverloaded() {
-        return agents.size() > maxCapacity;
-    }
-
-    /** 
      * Adds an agent to this node 
      * @param agent agent to add
      */
