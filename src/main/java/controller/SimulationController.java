@@ -109,7 +109,7 @@ public class SimulationController {
                 if (!neighbors.isEmpty()) {
                     Node fallback = neighbors.get(0);
                     node.removeAgent(agent);
-                    agent.arriveAt(fallback);
+                    placeAgentOnNode(agent, fallback);
                     rerouteAgent(agent, fallback, pf);
                 } else {
                     if (engine != null) engine.removeAgent(agent);
@@ -374,6 +374,18 @@ public class SimulationController {
                 (path.get(i).equals(tgt) && path.get(i + 1).equals(src))) return true;
         }
         return false;
+    }
+
+    private void placeAgentOnNode(Agent agent, Node node) {
+        if (agent.getCurrentEdge() != null) {
+            agent.getCurrentEdge().getAgents().remove(agent);
+            agent.setCurrentEdge(null);
+        }
+        if (agent.getCurrentNode() != null) {
+            agent.getCurrentNode().getAgents().remove(agent);
+        }
+        agent.setCurrentNode(node);
+        node.getAgents().add(agent);
     }
 
     // Helpers
