@@ -6,6 +6,7 @@ import model.graph.Edge;
 import model.agent.Agent;
 import model.agent.AgentType;
 import model.agent.AgentState;
+import model.agent.AgentBehavior;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -146,6 +147,10 @@ public class SimulationEngine {
             case PMR:   canMove = (counter % 2) == 0; break;
             default:    canMove = true;
         }
+        // INJURED moves very slowly regardless of type
+        if (agent.getState() == AgentState.INJURED) {
+            canMove = (counter % 4) == 0;
+        }
         if (canMove) {
             if (agent.isInTransit()) {
                 // Agent en transit dans un couloir
@@ -164,9 +169,16 @@ public class SimulationEngine {
                 // Agent dans un nœud, en attente d'entrer dans l'arête suivante
                 Node nextNode = agent.getCurrentPath().get(0);
                 Edge edge     = findEdge(agent.getCurrentNode(), nextNode);
-
+                // COOPERATIVE yields to PRIORITY agents waiting for the same edge
+                if (agent.getBehavior() == AgentBehavior.COOPERATIVE) {
+                    boolean priorityWaiting = agent.getCurrentNode().getAgents().stream()
+                            .filter(a -> a != agent && a.getBehavior() == AgentBehavior.PRIORITY)
+                            .anyMatch(a -> !a.getCurrentPath().isEmpty()
+                                    && findEdge(a.getCurrentNode(), a.getCurrentPath().get(0)) == edge);
+                    if (priorityWaiting) return false;
+                }
                 if (edge != null) {
-                    if (isEdgeAvailable(edge) && moveToEdge(agent, edge)) {
+                    if (isEdgeAvailable(edge, agent) && moveToEdge(agent, edge)) {
                         statistics.recordAgentPassedEdge(edge);
                         agent.getCurrentPath().remove(0);
                         stuckCounters.put(agent, 0);
@@ -187,11 +199,9 @@ public class SimulationEngine {
                         stuckCounters.put(agent, stuckTicks);
 
                         if (stuckTicks >= 3) {
-                            List<Node> newPath = pathfinder.dijkstraTime(
-                                agent.getCurrentNode(),
-                                agent.getDestinationNode(),
-                                graph
-                            );
+                            List<Node> newPath = (agent.getBehavior() == AgentBehavior.FOLLOWER)
+                                    ? followerPath(agent)
+                                    : pathfinder.dijkstraTime(agent.getCurrentNode(), agent.getDestinationNode(), graph);
                             if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
                             agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
                             stuckCounters.put(agent, 0);
@@ -207,11 +217,9 @@ public class SimulationEngine {
                 stuckCounters.put(agent, stuckTicks);
 
                 if (stuckTicks >= 1) {
-                    List<Node> newPath = pathfinder.dijkstraTime(
-                        agent.getCurrentNode(),
-                        agent.getDestinationNode(),
-                        graph
-                    );
+                    List<Node> newPath = (agent.getBehavior() == AgentBehavior.FOLLOWER)
+                            ? followerPath(agent)
+                            : pathfinder.dijkstraTime(agent.getCurrentNode(), agent.getDestinationNode(), graph);
                     if (newPath != null && !newPath.isEmpty()) newPath.remove(0);
                     agent.setCurrentPath(newPath != null ? newPath : new ArrayList<>());
                     stuckCounters.put(agent, 0);
@@ -265,7 +273,7 @@ public class SimulationEngine {
      * @return true if the move was successful, false if the edge is full
      */
     private boolean moveToEdge(Agent agent, Edge edge) {
-        if (!isEdgeAvailable(edge)) {
+        if (!isEdgeAvailable(edge, agent)) {
             return false;
         }
         if (agent.getCurrentNode() != null) {
@@ -294,9 +302,50 @@ public class SimulationEngine {
         agent.setCurrentNode(node);
         node.getAgents().add(agent);
     }
-    
-    private boolean isEdgeAvailable(Edge edge) {
-        return edge.getAgents().size() < edge.getWidth();
+
+    /**
+     * Returns whether an edge has available capacity for the given agent.
+     * PRIORITY agents can exceed capacity by 1.
+     *
+     * @param edge  the edge to check
+     * @param agent the agent attempting to enter
+     * @return true if the agent can enter the edge
+     */
+    private boolean isEdgeAvailable(Edge edge, Agent agent) {
+        int limit = (agent.getBehavior() == AgentBehavior.PRIORITY)
+                    ? edge.getWidth() + 1
+                    : edge.getWidth();
+        return edge.getAgents().size() < limit;
     }
 
+    /**
+     * Computes a one-step path for a FOLLOWER agent by picking the
+     * outgoing edge with the most agents on it. Falls back to Dijkstra
+     * if no agents are found on any adjacent edge.
+     *
+     * @param agent the follower agent
+     * @return a one-node path toward the most populated adjacent edge
+     */
+    private List<Node> followerPath(Agent agent) {
+        Node current = agent.getCurrentNode();
+        if (current == null) return new ArrayList<>();
+        Edge bestEdge  = null;
+        int  maxAgents = -1;
+        for (Edge edge : graph.getEdges()) {
+            boolean accessible = edge.getSource().equals(current)
+                || (!edge.isDirected() && edge.getTarget().equals(current));
+            if (accessible && isEdgeAvailable(edge, agent)) {
+                int count = edge.getAgents().size();
+                if (count > maxAgents) { maxAgents = count; bestEdge = edge; }
+            }
+        }
+        if (bestEdge == null || maxAgents == 0) {
+            return pathfinder.dijkstraTime(current, agent.getDestinationNode(), graph);
+        }
+        Node next = bestEdge.getSource().equals(current)
+                    ? bestEdge.getTarget() : bestEdge.getSource();
+        List<Node> path = new ArrayList<>();
+        path.add(next);
+        return path;
+    }
 }
