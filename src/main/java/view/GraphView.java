@@ -557,12 +557,7 @@ public class GraphView {
 
         gc.restore();
 
-        // Evacuated counter — fixed top-left overlay, outside world transform (KAN-41)
-        if (engine != null) {
-            gc.setFill(Color.DARKGREEN);
-            gc.fillRect(10, 15, 160, 25);
-            gc.setFill(Color.WHITE);
-            gc.fillText("Évacués : " + engine.getStatistics().getEvacuatedCount(), 20, 32);
+    
         }
         // Selection info is now displayed in the MainView stats bar (KAN-41)
     }
