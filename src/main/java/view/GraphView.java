@@ -61,12 +61,14 @@ public class GraphView {
     private boolean connectMode = false;
     private Node connectSource = null;
 
+    // ── Constructor ───────────────────────────────────────────────────────────
+
     /**
      * Constructs a GraphView responsible for rendering and interacting with a graph
      * on a JavaFX Canvas.
      *
-     * @param canvas the JavaFX canvas used for rendering the graph
-     * @param graph  the underlying graph model to visualize and manipulate
+     * @param canvas     the JavaFX canvas used for rendering the graph
+     * @param graph      the underlying graph model to visualize and manipulate
      * @param controller the controller used to delegate graph modification actions
      */
     public GraphView(Canvas canvas, Graph graph, SimulationController controller) {
@@ -156,7 +158,6 @@ public class GraphView {
                     }
                 }
             }
-
             // Priority 2 : nodes
             for (Node node : nodes) {
                 if (hitNode(node, mouseX, mouseY)) {
@@ -168,7 +169,6 @@ public class GraphView {
                     return;
                 }
             }
-
             // Priority 3 : edges
             for (Edge edge : edges) {
                 if (hitEdge(edge, mouseX, mouseY)) {
@@ -180,7 +180,6 @@ public class GraphView {
                     return;
                 }
             }
-
             // Click in empty space — deselect all
             selectedNode  = null;
             selectedEdge  = null;
@@ -233,6 +232,8 @@ public class GraphView {
         });
     }
 
+    // ── Public methods ────────────────────────────────────────────────────────
+
     /**
      * Registers a callback invoked every time the selection changes
      * (agent, node, edge selected, or deselected).
@@ -263,59 +264,6 @@ public class GraphView {
      * @return the selected {@link Agent}
      */
     public Agent getSelectedAgent() { return selectedAgent; }
-
-    /**
-     * Converts a screen X coordinate into a world X coordinate
-     * based on the current camera offset and zoom level.
-     *
-     * @param screenX the X coordinate in screen space (pixels)
-     * @return the corresponding X coordinate in world space
-     */
-    private double toWorldX(double screenX) { return (screenX - offsetX) / zoom; }
-
-    /**
-     * Converts a screen Y coordinate into a world Y coordinate
-     * based on the current camera offset and zoom level.
-     *
-     * @param screenY the Y coordinate in screen space (pixels)
-     * @return the corresponding Y coordinate in world space
-     */
-    private double toWorldY(double screenY) { return (screenY - offsetY) / zoom; }
-
-    /**
-     * Checks whether a given point in world coordinates lies inside a node's bounding box.
-     *
-     * @param node the node to test against
-     * @param x    the X coordinate in world space
-     * @param y    the Y coordinate in world space
-     * @return {@code true} if the point lies within the node's bounds
-     */
-    private boolean hitNode(Node node, double x, double y) {
-        return x >= node.getX() && x <= node.getX() + 120
-            && y >= node.getY() && y <= node.getY() + 60;
-    }
-
-    /**
-     * Determines whether a point in world coordinates is close enough to an edge
-     * to be considered as hitting it.
-     *
-     * @param edge the edge to test against
-     * @param mx   the X coordinate of the mouse in world space
-     * @param my   the Y coordinate of the mouse in world space
-     * @return {@code true} if the point is within interaction range of the edge
-     */
-    private boolean hitEdge(Edge edge, double mx, double my) {
-        double x1   = edge.getSource().getX() + 60;
-        double y1   = edge.getSource().getY() + 30;
-        double x2   = edge.getTarget().getX() + 60;
-        double y2   = edge.getTarget().getY() + 30;
-        double len2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
-        if (len2 == 0) return false;
-        double t  = Math.max(0, Math.min(1, ((mx - x1) * (x2 - x1) + (my - y1) * (y2 - y1)) / len2));
-        double px = x1 + t * (x2 - x1);
-        double py = y1 + t * (y2 - y1);
-        return Math.sqrt((mx - px) * (mx - px) + (my - py) * (my - py)) < 8;
-    }
 
     /**
      * Sets the simulation engine used by this view and synchronizes the local
@@ -434,7 +382,6 @@ public class GraphView {
         drawGraph();
     }
 
-
     /**
      * Removes the currently selected element (node, edge, or agent).
      * Agents on a deleted node are rerouted to a neighbour when possible.
@@ -450,7 +397,6 @@ public class GraphView {
             if (onSelectionChanged != null) onSelectionChanged.run();
             return;
         }
-
         if (selectedEdge != null) {
             controller.removeEdge(selectedEdge.getId());
             edges.remove(selectedEdge);
@@ -459,9 +405,7 @@ public class GraphView {
             if (onSelectionChanged != null) onSelectionChanged.run();
             return;
         }
-
         if (selectedNode == null) return;
-
         controller.removeNode(selectedNode.getId());
         edges.removeIf(e -> e.getSource().equals(selectedNode) || e.getTarget().equals(selectedNode));
         nodes.remove(selectedNode);
@@ -552,7 +496,7 @@ public class GraphView {
                 for (Node next : selectedAgent.getCurrentPath()) {
                     double x1 = previous.getX() + 60, y1 = previous.getY() + 30;
                     double x2 = next.getX()      + 60, y2 = next.getY()     + 30;
-                    gc.setStroke(Color.WHITE);              gc.setLineWidth(5); gc.strokeLine(x1, y1, x2, y2);
+                    gc.setStroke(Color.WHITE);               gc.setLineWidth(5); gc.strokeLine(x1, y1, x2, y2);
                     gc.setStroke(agentColor(selectedAgent)); gc.setLineWidth(3); gc.strokeLine(x1, y1, x2, y2);
                     previous = next;
                 }
@@ -624,6 +568,82 @@ public class GraphView {
     }
 
     /**
+     * Removes an agent from the local agent list of this view.
+     *
+     * @param agent the agent to remove
+     */
+    public void removeAgent(Agent agent) { agents.remove(agent); }
+
+    /**
+     * Returns the graph currently rendered by this view.
+     *
+     * @return the underlying {@link Graph}
+     */
+    public Graph getGraph() { return graph; }
+
+    /**
+     * Returns the local list of agents managed by this view.
+     *
+     * @return the list of {@link Agent} objects
+     */
+    public List<Agent> getAgents() { return agents; }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    /**
+     * Converts a screen X coordinate into a world X coordinate
+     * based on the current camera offset and zoom level.
+     *
+     * @param screenX the X coordinate in screen space (pixels)
+     * @return the corresponding X coordinate in world space
+     */
+    private double toWorldX(double screenX) { return (screenX - offsetX) / zoom; }
+
+    /**
+     * Converts a screen Y coordinate into a world Y coordinate
+     * based on the current camera offset and zoom level.
+     *
+     * @param screenY the Y coordinate in screen space (pixels)
+     * @return the corresponding Y coordinate in world space
+     */
+    private double toWorldY(double screenY) { return (screenY - offsetY) / zoom; }
+
+    /**
+     * Checks whether a given point in world coordinates lies inside a node's bounding box.
+     *
+     * @param node the node to test against
+     * @param x    the X coordinate in world space
+     * @param y    the Y coordinate in world space
+     * @return {@code true} if the point lies within the node's bounds
+     */
+    private boolean hitNode(Node node, double x, double y) {
+        return x >= node.getX() && x <= node.getX() + 120
+            && y >= node.getY() && y <= node.getY() + 60;
+    }
+
+    /**
+     * Determines whether a point in world coordinates is close enough to an edge
+     * to be considered as hitting it.
+     *
+     * @param edge the edge to test against
+     * @param mx   the X coordinate of the mouse in world space
+     * @param my   the Y coordinate of the mouse in world space
+     * @return {@code true} if the point is within interaction range of the edge
+     */
+    private boolean hitEdge(Edge edge, double mx, double my) {
+        double x1   = edge.getSource().getX() + 60;
+        double y1   = edge.getSource().getY() + 30;
+        double x2   = edge.getTarget().getX() + 60;
+        double y2   = edge.getTarget().getY() + 30;
+        double len2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+        if (len2 == 0) return false;
+        double t  = Math.max(0, Math.min(1, ((mx - x1) * (x2 - x1) + (my - y1) * (y2 - y1)) / len2));
+        double px = x1 + t * (x2 - x1);
+        double py = y1 + t * (y2 - y1);
+        return Math.sqrt((mx - px) * (mx - px) + (my - py) * (my - py)) < 8;
+    }
+
+    /**
      * Returns the display color associated with an agent's current state.
      *
      * @param agent the agent whose state determines the color
@@ -637,8 +657,4 @@ public class GraphView {
             default:       return Color.BLACK;
         }
     }
-
-    public void removeAgent(Agent agent) { agents.remove(agent); }
-    public Graph getGraph()              { return graph; }
-    public List<Agent> getAgents()       { return agents; }
 }
