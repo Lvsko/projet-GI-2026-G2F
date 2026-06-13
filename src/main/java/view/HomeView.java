@@ -43,7 +43,7 @@ public class HomeView extends Application {
         titleBox.setAlignment(Pos.CENTER);
 
         // ── Demo button ───────────────────────────────────────────────────────
-        Label demoTitle = new Label("Démo");
+        Label demoTitle = new Label("Demo");
         demoTitle.setFont(Font.font("Georgia", FontWeight.BOLD, 17));
         demoTitle.setTextFill(Color.WHITE);
 
