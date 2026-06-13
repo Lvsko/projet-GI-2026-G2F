@@ -30,11 +30,11 @@ public class ScenarioSelectorView extends Application {
     @Override
     public void start(Stage stage) {
         // Title
-        Label title = new Label("CHOISIR UN SCÉNARIO");
+        Label title = new Label("CHOOSE A SCENARIO");
         title.setFont(Font.font("Georgia", FontWeight.BOLD, 28));
         title.setTextFill(Color.web("#2E7D32"));
 
-        Label subtitle = new Label("MODE DÉMONSTRATION");
+        Label subtitle = new Label("DEMO MODE");
         subtitle.setFont(Font.font("Arial", 12));
         subtitle.setTextFill(Color.web("#bdbdbd"));
 
@@ -45,7 +45,7 @@ public class ScenarioSelectorView extends Application {
         Label bestTitle = new Label("Best Case");
         bestTitle.setFont(Font.font("Georgia", FontWeight.BOLD, 16));
         bestTitle.setTextFill(Color.WHITE);
-        Label bestSub = new Label("Tous calmes, sorties ouvertes");
+        Label bestSub = new Label("All calm, exits open");
         bestSub.setFont(Font.font("Arial", 11));
         bestSub.setTextFill(Color.web("#a5d6a7"));
         VBox bestBox = new VBox(5, bestTitle, bestSub);
@@ -68,7 +68,7 @@ public class ScenarioSelectorView extends Application {
         Label avgTitle = new Label("Average Case");
         avgTitle.setFont(Font.font("Georgia", FontWeight.BOLD, 16));
         avgTitle.setTextFill(Color.WHITE);
-        Label avgSub = new Label("Mix calmes / blessés");
+        Label avgSub = new Label("Mix calm / injured");
         avgSub.setFont(Font.font("Arial", 11));
         avgSub.setTextFill(Color.web("#ffcc80"));
         VBox avgBox = new VBox(5, avgTitle, avgSub);
@@ -90,7 +90,7 @@ public class ScenarioSelectorView extends Application {
         Label worstTitle = new Label("Worst Case");
         worstTitle.setFont(Font.font("Georgia", FontWeight.BOLD, 16));
         worstTitle.setTextFill(Color.WHITE);
-        Label worstSub = new Label("Tous paniqués, sortie bloquée");
+        Label worstSub = new Label("All panicked, exit blocked");
         worstSub.setFont(Font.font("Arial", 11));
         worstSub.setTextFill(Color.web("#ef9a9a"));
         VBox worstBox = new VBox(5, worstTitle, worstSub);
@@ -111,7 +111,7 @@ public class ScenarioSelectorView extends Application {
         HBox buttons = new HBox(20, bestButton, avgButton, worstButton);
         buttons.setAlignment(Pos.CENTER);
 
-        Button retourButton = new Button("← Retour");
+        Button retourButton = new Button("← Back");
         retourButton.setStyle("-fx-background-color: transparent; -fx-text-fill: #bdbdbd; -fx-cursor: hand;");
         retourButton.setOnAction(e -> {
             new HomeView().start(stage);
@@ -122,7 +122,7 @@ public class ScenarioSelectorView extends Application {
         root.setStyle("-fx-background-color: #424242;");
 
         Scene scene = new Scene(root, stage.getWidth(), stage.getHeight());
-        stage.setTitle("EXIT — Démo");
+        stage.setTitle("EXIT — Demo");
         stage.setScene(scene);
         stage.show();
     }
