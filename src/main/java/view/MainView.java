@@ -1,9 +1,11 @@
 package view;
 
 import controller.SimulationController;
+import model.Edge;
 import model.Graph;
 import model.agent.Agent;
 import model.agent.AgentState;
+import model.node.Node;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -11,6 +13,7 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.layout.HBox;
@@ -25,9 +28,9 @@ import simulation.SimulationEngine;
 /**
  * Main JavaFX view of the EXIT application.
  * Displays the simulation canvas, a toolbar with controls,
- * and a side panel showing live statistics.
+ * and a side panel showing live statistics and selected-element info (KAN-41).
  *
- * @author Leonardo
+ * @author Leonardo, Yoni
  */
 public class MainView extends Application {
 
@@ -84,10 +87,12 @@ public class MainView extends Application {
         renderer.setEngine(controller.getEngine());
         SimulationEngine engine = controller.getEngine();
 
-        // ── Stats panel ───────────────────────────────────────────────────────
-        String statStyle  = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial; -fx-font-size: 13;";
-        String titleStyle = "-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 15;";
+        // ── Styles ────────────────────────────────────────────────────────────
+        String statStyle      = "-fx-text-fill: #e0e0e0; -fx-font-family: Arial; -fx-font-size: 13;";
+        String titleStyle     = "-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 15;";
+        String subTitleStyle  = "-fx-text-fill: #1565C0; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 14;";
 
+        // ── Stats panel — top half (Lassina's work, KAN-40) ──────────────────
         Label statsTitle     = new Label("STATISTIQUES"); statsTitle.setStyle(titleStyle);
         Label tickLabel      = new Label("Tick : 0");
         Label evacuatedLabel = new Label("Évacués : 0");
@@ -95,23 +100,79 @@ public class MainView extends Application {
         Label calmLabel      = new Label("Calmes : 0");
         Label panickedLabel  = new Label("Paniqués : 0");
         Label injuredLabel   = new Label("Blessés : 0");
-        tickLabel.setStyle(statStyle);
-        evacuatedLabel.setStyle(statStyle);
-        remainingLabel.setStyle(statStyle);
-        calmLabel.setStyle(statStyle);
-        panickedLabel.setStyle(statStyle);
-        injuredLabel.setStyle(statStyle);
+        tickLabel.setStyle(statStyle);      evacuatedLabel.setStyle(statStyle);
+        remainingLabel.setStyle(statStyle); calmLabel.setStyle(statStyle);
+        panickedLabel.setStyle(statStyle);  injuredLabel.setStyle(statStyle);
 
+        // ── Selection panel — bottom half (KAN-41) ───────────────────────────
+        Label selectionTitle = new Label("SÉLECTION"); selectionTitle.setStyle(subTitleStyle);
+        VBox selectionContent = new VBox(6);
+
+        // Populates the selection section based on what is currently selected
+        Runnable updateSelection = () -> {
+            selectionContent.getChildren().clear();
+            Node  node  = renderer.getSelectedNode();
+            Edge  edge  = renderer.getSelectedEdge();
+            Agent agent = renderer.getSelectedAgent();
+            if (node != null) {
+                selectionContent.getChildren().addAll(
+                    styledStat("ID : "           + node.getId()),
+                    styledStat("Nom : "          + node.getName()),
+                    styledStat("Type : "         + node.getType()),
+                    styledStat("Statut : "       + node.getStatus()),
+                    styledStat("Capacité : "     + node.getCapacity()),
+                    styledStat("Occupants : "    + node.getOccupancy()),
+                    styledStat("Attractivité : " + node.getAttractiveness())
+                );
+            } else if (edge != null) {
+                selectionContent.getChildren().addAll(
+                    styledStat("ID : "        + edge.getId()),
+                    styledStat("De : "        + edge.getSource().getName()),
+                    styledStat("Vers : "      + edge.getTarget().getName()),
+                    styledStat("Largeur : "   + edge.getWidth()),
+                    styledStat("Distance : "  + edge.getDistance()),
+                    styledStat("Occupants : " + edge.getOccupancy()),
+                    styledStat("Dirigé : "    + edge.isDirected())
+                );
+            } else if (agent != null) {
+                selectionContent.getChildren().addAll(
+                    styledStat("ID : "            + agent.getId()),
+                    styledStat("État : "          + agent.getState()),
+                    styledStat("Type : "          + agent.getType()),
+                    styledStat("Comportement : "  + agent.getBehavior()),
+                    styledStat("Position : "      + (agent.getCurrentNode()     != null ? agent.getCurrentNode().getName()     : "—")),
+                    styledStat("Destination : "   + (agent.getDestinationNode() != null ? agent.getDestinationNode().getName() : "—"))
+                );
+            } else {
+                selectionContent.getChildren().add(styledStat("Cliquez sur un élément"));
+            }
+        };
+
+        // Wire selection callback — fires whenever the user clicks a node/edge/agent (KAN-41)
+        renderer.setOnSelectionChanged(updateSelection);
+        updateSelection.run(); // initial state
+
+        // ── Stats panel assembly ──────────────────────────────────────────────
         VBox statsPanel = new VBox(12,
             statsTitle, new Separator(),
             tickLabel, evacuatedLabel, remainingLabel,
             new Separator(),
-            calmLabel, panickedLabel, injuredLabel
+            calmLabel, panickedLabel, injuredLabel,
+            new Separator(),
+            selectionTitle, new Separator(),
+            selectionContent
         );
         statsPanel.setPadding(new Insets(15));
         statsPanel.setPrefWidth(200);
         statsPanel.setMinWidth(200);
         statsPanel.setStyle("-fx-background-color: #303030;");
+
+        // Wrap in ScrollPane so selection info is accessible even when the panel overflows
+        ScrollPane statsScroll = new ScrollPane(statsPanel);
+        statsScroll.setPrefWidth(220);
+        statsScroll.setMinWidth(220);
+        statsScroll.setFitToWidth(true);
+        statsScroll.setStyle("-fx-background-color: #303030; -fx-background: #303030;");
 
         // ── Speed slider ──────────────────────────────────────────────────────
         Slider speedSlider = new Slider(1, 10, 1);
@@ -142,6 +203,8 @@ public class MainView extends Application {
             calmLabel.setText("Calmes : "     + calm);
             panickedLabel.setText("Paniqués : "  + panicked);
             injuredLabel.setText("Blessés : "    + injured);
+            // Refresh selection info every tick so occupancy/state stay up to date
+            updateSelection.run();
         };
 
         controller.startTimer(renderer, updateStats);
@@ -218,10 +281,11 @@ public class MainView extends Application {
         // ── Layout — StackPane absorbs extra space so stats panel doesn't
         //    stick to the canvas on wide screens (KAN-40) ─────────────────────
         StackPane canvasWrapper = new StackPane(canvas);
-        HBox mainContent = new HBox(canvasWrapper, statsPanel);
+        HBox mainContent = new HBox(canvasWrapper, statsScroll);
         HBox.setHgrow(canvasWrapper, Priority.ALWAYS);
 
         VBox root = new VBox(toolbar, mainContent);
+        VBox.setVgrow(mainContent, Priority.ALWAYS);
         root.setStyle("-fx-background-color: #424242;");
 
         // No fixed scene size — window keeps its current dimensions on navigation (KAN-39)
@@ -260,5 +324,18 @@ public class MainView extends Application {
             "-fx-padding: 6 14 6 14;"
         );
         return btn;
+    }
+
+    /**
+     * Creates a styled label for the stats and selection panel.
+     *
+     * @param text the label text to display
+     * @return the configured {@link Label}
+     */
+    private Label styledStat(String text) {
+        Label lbl = new Label(text);
+        lbl.setStyle("-fx-text-fill: #e0e0e0; -fx-font-family: Arial; -fx-font-size: 12;");
+        lbl.setWrapText(true);
+        return lbl;
     }
 }
