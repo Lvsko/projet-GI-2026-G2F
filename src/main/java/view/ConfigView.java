@@ -137,16 +137,16 @@ public class ConfigView {
                 double x      = Double.parseDouble(nodeX.getText().trim());
                 double y      = Double.parseDouble(nodeY.getText().trim());
                 NodeType type = nodeType.getValue();
-                if (id.isEmpty() || name.isEmpty()) { nodeStatus.setText("Erreur : ID et nom requis.");        return; }
-                if (graph.getNode(id) != null)       { nodeStatus.setText("Erreur : ID déjà utilisé.");        return; }
-                if (capacity <= 0)                   { nodeStatus.setText("Erreur : capacité doit être > 0."); return; }
+                if (id.isEmpty() || name.isEmpty()) { nodeStatus.setText("Error: ID and name are required.");        return; }
+                if (graph.getNode(id) != null)       { nodeStatus.setText("Error: ID already in use.");        return; }
+                if (capacity <= 0)                   { nodeStatus.setText("Error: capacity must be > 0."); return; }
                 saveState();
                 controller.addNode(id, name, x, y, capacity, NodeStatus.OPEN, type, 1.0f);
-                nodeStatus.setText("Nœud '" + name + "' ajouté.");
+                nodeStatus.setText("Node '" + name + "' added.");
                 nodeId.clear(); nodeName.clear(); nodeCapacity.clear(); nodeX.clear(); nodeY.clear();
                 refreshPreview();
             } catch (NumberFormatException ex) {
-                nodeStatus.setText("Erreur : capacité, X et Y doivent être des nombres.");
+                nodeStatus.setText("Error: capacity, X and Y must be numbers.");
             }
         });
 
@@ -192,17 +192,17 @@ public class ConfigView {
                 boolean directed = edgeDirected.isSelected();
                 Node source = graph.getNode(sourceId);
                 Node target = graph.getNode(targetId);
-                if (source == null || target == null) { edgeStatus.setText("Erreur : nœud source ou cible introuvable.");        return; }
-                if (source.equals(target))             { edgeStatus.setText("Erreur : source et cible doivent être différents."); return; }
-                if (width <= 0)                        { edgeStatus.setText("Erreur : largeur doit être > 0.");                   return; }
-                if (distance <= 0)                     { edgeStatus.setText("Erreur : distance doit être > 0.");                  return; }
+                if (source == null || target == null) { edgeStatus.setText("Error: source or target node not found.");        return; }
+                if (source.equals(target))             { edgeStatus.setText("Error: source and target must be different."); return; }
+                if (width <= 0)                        { edgeStatus.setText("Error: width must be > 0.");                   return; }
+                if (distance <= 0)                     { edgeStatus.setText("Error: distance must be > 0.");                  return; }
                 saveState();
                 controller.addEdge(id, source, target, width, distance, 1.0f, directed);
-                edgeStatus.setText("Arête '" + id + "' ajoutée.");
+                edgeStatus.setText("Edge '" + id + "' added.");
                 edgeId.clear(); edgeSource.clear(); edgeTarget.clear(); edgeWidth.clear(); edgeDistance.clear();
                 refreshPreview();
             } catch (NumberFormatException ex) {
-                edgeStatus.setText("Erreur : largeur et distance doivent être des nombres.");
+                edgeStatus.setText("Error: width and distance must be numbers.");
             }
         });
 
@@ -248,7 +248,7 @@ public class ConfigView {
                 Node startNode = agentNode.getValue();
                 int  count     = Integer.parseInt(agentCount.getText().trim());
                 if (startNode == null || count <= 0) {
-                    agentStatus.setText("Erreur : sélectionnez un nœud et entrez un nombre valide.");
+                    agentStatus.setText("Error: select a node and enter a valid number.");
                     return;
                 }
                 for (int i = 0; i < count; i++) {
@@ -260,10 +260,10 @@ public class ConfigView {
                     startNode.addAgent(agent);
                     agents.add(agent);
                 }
-                agentStatus.setText(count + " agent(s) ajouté(s) sur '" + startNode.getId() + "'.");
+                agentStatus.setText(count + " agent(s) added to '" + startNode.getId() + "'.");
                 agentCount.clear();
             } catch (NumberFormatException ex) {
-                agentStatus.setText("Erreur : le nombre doit être un entier.");
+                agentStatus.setText("Error: the number must be an integer.");
             }
         });
 
@@ -275,7 +275,7 @@ public class ConfigView {
         Button saveBtn = new Button("💾 Save Plan"); saveBtn.setStyle(btnSecondary);
         saveBtn.setOnAction(e -> {
             controller.savePlan();
-            saveLoadStatus.setText("Plan sauvegardé.");
+            saveLoadStatus.setText("Plan saved.");
         });
         Button loadBtn = new Button("📂 Load Plan"); loadBtn.setStyle(btnSecondary);
         loadBtn.setOnAction(e -> {
@@ -283,7 +283,7 @@ public class ConfigView {
             if (loaded != null) {
                 graph = loaded;
                 controller = new SimulationController(graph, stage);
-                saveLoadStatus.setText("Plan chargé.");
+                saveLoadStatus.setText("Plan loaded.");
                 refreshPreview();
             }
         });
@@ -293,32 +293,32 @@ public class ConfigView {
         Button randomBtn = new Button("Random Generation"); randomBtn.setStyle(btnSecondary);
         randomBtn.setOnAction(e -> {
             TextInputDialog dialog = new TextInputDialog("5");
-            dialog.setTitle("Génération aléatoire");
-            dialog.setHeaderText("Générer des nœuds et arêtes aléatoires");
-            dialog.setContentText("Nombre de nœuds (2–100) :");
+            dialog.setTitle("Random Generation");
+            dialog.setHeaderText("Generate random nodes and edges");
+            dialog.setContentText("Number of nodes (2–100) :");
             Optional<String> result = dialog.showAndWait();
             result.ifPresent(val -> {
                 try {
                     int n = Integer.parseInt(val.trim());
                     if (n < 2) {
-                        new Alert(Alert.AlertType.WARNING, "Minimum 2 nœuds requis.").showAndWait();
+                        new Alert(Alert.AlertType.WARNING, "Minimum 2 nodes required.").showAndWait();
                         return;
                     }
                     if (n > 100) {
-                        new Alert(Alert.AlertType.WARNING, "Maximum 100 nœuds (limite performances).").showAndWait();
+                        new Alert(Alert.AlertType.WARNING, "Maximum 100 nodes (performance limit).").showAndWait();
                         return;
                     }
                     saveState();
                     controller.generateRandom(n);
                     refreshPreview();
                 } catch (NumberFormatException ex) {
-                    new Alert(Alert.AlertType.ERROR, "Entrez un nombre entier valide.").showAndWait();
+                    new Alert(Alert.AlertType.ERROR, "Enter a valid integer.").showAndWait();
                 }
             });
         });
 
         // ── Launch simulation ────────────────────────────────────────────────
-        Button launchBtn = new Button("▶ Lancer la simulation");
+        Button launchBtn = new Button("▶ Launch Simulation");
         launchBtn.setStyle(btnPrimary + "-fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 13;");
         // Validate via controller (checks EXIT node + non-empty agents), then navigate (KAN-39)
         launchBtn.setOnAction(e -> {
@@ -329,7 +329,7 @@ public class ConfigView {
         });
 
         // ── Back button ──────────────────────────────────────────────────────
-        Button retourBtn = new Button("← Retour"); retourBtn.setStyle(btnSecondary);
+        Button retourBtn = new Button("← Back"); retourBtn.setStyle(btnSecondary);
         // Reuse the same stage to avoid window size jump on navigation (KAN-39)
         retourBtn.setOnAction(e -> new HomeView().start(stage));
 
@@ -358,7 +358,7 @@ public class ConfigView {
         VBox previewBox = new VBox(8);
         previewBox.setPadding(new Insets(15));
         previewBox.setStyle("-fx-background-color: #424242;");
-        Label previewTitle = new Label("Aperçu du graphe");
+        Label previewTitle = new Label("Graph Preview");
         previewTitle.setStyle("-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 14;");
         previewBox.getChildren().addAll(previewTitle, previewCanvas);
         HBox.setHgrow(previewBox, Priority.ALWAYS);
