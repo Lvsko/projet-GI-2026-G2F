@@ -289,7 +289,7 @@ public class MainView extends Application {
         root.setStyle("-fx-background-color: #424242;");
 
         // No fixed scene size — window keeps its current dimensions on navigation (KAN-39)
-        Scene scene = new Scene(root);
+        Scene scene = new Scene(root, stage.getWidth(), stage.getHeight());
         stage.setTitle("EXIT — Simulation");
         stage.setScene(scene);
         stage.show();
