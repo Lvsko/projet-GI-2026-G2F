@@ -155,6 +155,55 @@ public class Pathfinder {
     }
 
     /**
+     * Automatically chooses the best output according to the agent's state.
+     * - CALM / INJURED → optimal exit via dijkstraTime 
+     * - PANICKED → nearest exit via dijkstraDistance
+     * @param agent agent to whom find an exit
+     * @param graph     graph of the building
+     * @return the best exit
+     */
+    public Node chooseBestExit(Agent agent, Graph graph) {
+        Node bestExit = null;
+        float bestScore = Float.MAX_VALUE;
+        List<Node> bestPath = new ArrayList<>();
+
+        for (Node exit : getNodesByType(graph, model.node.NodeType.EXIT)) {
+            List<Node> path = agent.getState() == model.agent.AgentState.PANICKED
+                    ? dijkstraDistance(agent.getCurrentNode(), exit, graph)
+                    : dijkstraTime(agent.getCurrentNode(), exit, graph);
+
+            if (path == null || path.isEmpty()) continue;
+
+            float congestionFactor = 0f;
+
+            for (int i = 0; i < path.size() - 1; i++) {
+                Node u = path.get(i);
+                Node v = path.get(i + 1);
+
+                Edge edge = findConnectingEdge(graph, u, v);
+                if (edge != null) {
+                    congestionFactor += edge.getAgents().size();
+                }
+            }
+
+            float score = path.size() + congestionFactor;
+
+            if (score < bestScore) {
+                bestScore = score;
+                bestExit = exit;
+                bestPath = new ArrayList<>(path);
+            }
+        }
+
+        if (!bestPath.isEmpty()) {
+            bestPath.remove(0);
+        }
+
+        agent.setCurrentPath(bestPath);
+        return bestExit;
+    }
+
+    /**
      * Calculates the effective speed on a given edge
      * @param edge the edge for which the effective speed is being calculated
      * @return the calculated effective speed
