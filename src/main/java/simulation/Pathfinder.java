@@ -204,6 +204,12 @@ public class Pathfinder {
         return bestExit;
     }
 
+    /**
+     * Returns all nodes of the given type in the graph.
+     * @param graph the graph to search in
+     * @param type the node type to filter by
+     * @return a list of nodes matching the given type
+     */
     private List<Node> getNodesByType(Graph graph, model.node.NodeType type) {
         List<Node> result = new ArrayList<>();
         for (Node node : graph.getNodes()) {
