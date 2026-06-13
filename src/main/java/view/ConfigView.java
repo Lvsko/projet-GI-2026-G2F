@@ -36,6 +36,9 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import javafx.application.Platform;
+import javafx.scene.layout.Priority;
+
 
 /**
  * JavaFX view for manually configuring a building graph before launching the simulation.
@@ -347,7 +350,9 @@ public class ConfigView {
         );
 
         // ── Preview canvas ───────────────────────────────────────────────────
-        previewCanvas = new Canvas(600, 500);
+        double canvasW = stage.getWidth() - 420;
+        double canvasH = stage.getHeight() - 60;
+        previewCanvas = new Canvas(Math.max(canvasW, 400), Math.max(canvasH, 300));
         preview = new GraphView(previewCanvas, graph, controller);
 
         VBox previewBox = new VBox(8);
@@ -356,6 +361,8 @@ public class ConfigView {
         Label previewTitle = new Label("Aperçu du graphe");
         previewTitle.setStyle("-fx-text-fill: #2E7D32; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 14;");
         previewBox.getChildren().addAll(previewTitle, previewCanvas);
+        HBox.setHgrow(previewBox, Priority.ALWAYS);
+        previewBox.setMaxWidth(Double.MAX_VALUE);
 
         ScrollPane scrollForm = new ScrollPane(form);
         scrollForm.setStyle("-fx-background-color: #424242; -fx-background: #424242;");
@@ -367,6 +374,22 @@ public class ConfigView {
         Scene scene = new Scene(mainLayout, stage.getWidth(), stage.getHeight());
         stage.setScene(scene);
         stage.show();
+
+        stage.widthProperty().addListener((obs, o, n) -> {
+            double w = n.doubleValue() - 420 - 30;
+            if (w > 50) {
+                previewCanvas.setWidth(w);
+                Platform.runLater(() -> preview.drawGraph());
+            }
+        });
+        stage.heightProperty().addListener((obs, o, n) -> {
+            double h = n.doubleValue() - 60 - 50;
+            if (h > 50) {
+                previewCanvas.setHeight(h);
+                Platform.runLater(() -> preview.drawGraph());
+            }
+        });
+
 
         // Ctrl+Z / Ctrl+Y — ignored when a TextField has focus
         scene.setOnKeyPressed(e -> {
