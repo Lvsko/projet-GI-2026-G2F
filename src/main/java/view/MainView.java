@@ -120,7 +120,7 @@ public class MainView extends Application {
                     styledStat("Nom : "          + node.getName()),
                     styledStat("Type : "         + node.getType()),
                     styledStat("Statut : "       + node.getStatus()),
-                    styledStat("Capacité : "     + node.getCapacity()),
+                    styledStat("Capacité : " + node.getMaxCapacity()),
                     styledStat("Occupants : "    + node.getOccupancy()),
                     styledStat("Attractivité : " + node.getAttractiveness())
                 );
