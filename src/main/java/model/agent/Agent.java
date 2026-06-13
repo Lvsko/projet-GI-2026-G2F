@@ -108,43 +108,10 @@ public class Agent implements Serializable {
     public float getDensityTolerance() { return densityTolerance; }
 	public List<Node> getCurrentPath() { return currentPath; }
 	public void setCurrentPath(List<Node> path) { this.currentPath = path; }
-	
+	public void setCurrentNode(Node currentNode) { this.currentNode = currentNode; }
+	public void setCurrentEdge(Edge currentEdge) { this.currentEdge = currentEdge; }
+	public void setPreviousNode(Node previousNode) { this.previousNode = previousNode; }
 
-	/**
-     * Moves the agent to a neighboring edge.
-     * @param edge edge where the agent is going
-     * @return true if the move was successful, false if the edge is full
-     */
-    public boolean moveToEdge(Edge edge) {
-        if (!edge.isAvailable()) {
-            return false;
-        }
-        if (this.currentNode != null) {
-            this.previousNode = this.currentNode;
-            this.currentNode.removeAgent(this);
-            this.currentNode = null;
-        }
-        this.currentEdge = edge;
-        edge.addAgent(this);
-        return true;
-    }
-
-    /**
-     * Arrive on a node, end of transit on the edge.
-     * @param node arrival node
-     */
-    public void arriveAt(Node node) {
-        // Leave the current edge
-        if (this.currentEdge != null) {
-            this.currentEdge.removeAgent(this);
-            this.currentEdge = null;
-        }
-		if (this.currentNode != null) {
-    		this.currentNode.removeAgent(this);
-		}
-        this.currentNode = node;
-        node.addAgent(this);
-    }
 
     /** 
      * @return true if the agent is on an edge
