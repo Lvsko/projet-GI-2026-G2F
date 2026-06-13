@@ -303,8 +303,9 @@ public class GraphView {
             Agent agent = new Agent(
                 "agent" + System.currentTimeMillis(), finalTarget, 1.0f,
                 stateBox.getValue(), behaviorBox.getValue(), typeBox.getValue(),
-                0.5f, graph
+                0.5f
             );
+            finalTarget.addAgent(agent);
             agents.add(agent);
             if (engine != null) engine.addAgent(agent);
             drawGraph();
