@@ -35,7 +35,7 @@ public class HomeView extends Application {
         title.setFont(Font.font("Georgia", FontWeight.BOLD, 68));
         title.setTextFill(Color.web("#2E7D32"));
 
-        Label subtitle = new Label("SIMULATION D'ÉVACUATION");
+        Label subtitle = new Label("EVACUATION SIMULATION");
         subtitle.setFont(Font.font("Arial", 13));
         subtitle.setTextFill(Color.web("#bdbdbd"));
 
@@ -47,7 +47,7 @@ public class HomeView extends Application {
         demoTitle.setFont(Font.font("Georgia", FontWeight.BOLD, 17));
         demoTitle.setTextFill(Color.WHITE);
 
-        Label demoSub = new Label("3 scénarios possibles");
+        Label demoSub = new Label("3 available scenarios");
         demoSub.setFont(Font.font("Arial", 12));
         demoSub.setTextFill(Color.web("#a5d6a7"));
 
@@ -69,7 +69,7 @@ public class HomeView extends Application {
         configTitle.setFont(Font.font("Georgia", FontWeight.BOLD, 17));
         configTitle.setTextFill(Color.web("#e0e0e0"));
 
-        Label configSub = new Label("Personnaliser le bâtiment");
+        Label configSub = new Label("Customize the building");
         configSub.setFont(Font.font("Arial", 12));
         configSub.setTextFill(Color.web("#9e9e9e"));
 
@@ -96,13 +96,11 @@ public class HomeView extends Application {
         root.setAlignment(Pos.CENTER);
         root.setStyle("-fx-background-color: #424242;");
 
-        
         // Preserve stage dimensions on navigation; use defaults on first launch (KAN-39)
         double w = stage.isShowing() ? stage.getWidth() : 1200;
         double h = stage.isShowing() ? stage.getHeight() : 800;
         Scene scene = new Scene(root, w, h);
         stage.setTitle("EXIT");
-
         stage.setScene(scene);
         stage.show();
     }
