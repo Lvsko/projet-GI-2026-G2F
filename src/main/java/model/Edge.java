@@ -40,13 +40,6 @@ public class Edge implements Serializable {
     }
 
     /** 
-     * @return true if the edge can still accept more agents 
-     */
-    public boolean isAvailable() {
-        return agents.size() < width;
-    }
-
-    /** 
      * Adds an agent to this edge 
      * @param agent agent to add
      */
@@ -62,17 +55,6 @@ public class Edge implements Serializable {
         agents.remove(agent);
     }
 
-    /**
-     * @return the effective speed modifier
-    */
-    public float getEffectiveSpeed() {
-        long injuredCount = agents.stream()
-            .filter(a -> a.getState() == model.agent.AgentState.INJURED)
-            .count();
-        float effective = this.speedModifier - (0.2f * injuredCount); 
-        return Math.max(effective, 0.1f);  // Minimum value is 0.1
-    }
-    
     public void setWidth(int width) { this.width = width; }
 
     public String getId() { return id; }
