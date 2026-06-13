@@ -121,7 +121,7 @@ public class ScenarioSelectorView extends Application {
         root.setAlignment(Pos.CENTER);
         root.setStyle("-fx-background-color: #424242;");
 
-        Scene scene = new Scene(root);
+        Scene scene = new Scene(root, stage.getWidth(), stage.getHeight());
         stage.setTitle("EXIT — Démo");
         stage.setScene(scene);
         stage.show();
