@@ -148,7 +148,7 @@ public class SimulationEngine {
                     ? edge.getTarget()
                     : edge.getSource();
 
-                agent.arriveAt(destination);
+                arriveAt(agent, destination);
 
                 if (destination.getType() == model.node.NodeType.EXIT) {
                     destination.removeAgent(agent);
@@ -160,7 +160,7 @@ public class SimulationEngine {
                 Edge edge     = findEdge(agent.getCurrentNode(), nextNode);
 
                 if (edge != null) {
-                    if (isEdgeAvailable(edge) && agent.moveToEdge(edge)) {
+                    if (isEdgeAvailable(edge) && moveToEdge(agent, edge)) {
                         statistics.recordAgentPassedEdge(edge);
                         agent.getCurrentPath().remove(0);
                         stuckCounters.put(agent, 0);
@@ -170,7 +170,7 @@ public class SimulationEngine {
                             : edge.getSource();
 
                         if (destination.getType() == model.node.NodeType.EXIT) {
-                            agent.arriveAt(destination);
+                            arriveAt(agent, destination);
                             statistics.recordAgentPassedNode(destination);
                             destination.removeAgent(agent);
                             return true;
@@ -250,6 +250,43 @@ public class SimulationEngine {
                 }
             }
         }
+    }
+
+    /**
+     * Moves the agent to a neighboring edge.
+     * @param agent agent to move
+     * @param edge edge where the agent is going
+     * @return true if the move was successful, false if the edge is full
+     */
+    private boolean moveToEdge(Agent agent, Edge edge) {
+        if (!isEdgeAvailable(edge)) {
+            return false;
+        }
+        if (agent.getCurrentNode() != null) {
+            agent.setPreviousNode(agent.getCurrentNode());
+            agent.getCurrentNode().getAgents().remove(agent);
+            agent.setCurrentNode(null);
+        }
+        agent.setCurrentEdge(edge);
+        edge.getAgents().add(agent);
+        return true;
+    }
+
+    /**
+     * Arrive on a node, end of transit on the edge.
+     * @param agent agent who arrives
+     * @param node arrival node
+     */
+    private void arriveAt(Agent agent, Node node) {
+        if (agent.getCurrentEdge() != null) {
+            agent.getCurrentEdge().getAgents().remove(agent);
+            agent.setCurrentEdge(null);
+        }
+        if (agent.getCurrentNode() != null) {
+            agent.getCurrentNode().getAgents().remove(agent);
+        }
+        agent.setCurrentNode(node);
+        node.getAgents().add(agent);
     }
     
     private boolean isEdgeAvailable(Edge edge) {
