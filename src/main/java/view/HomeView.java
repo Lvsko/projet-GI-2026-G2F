@@ -96,16 +96,12 @@ public class HomeView extends Application {
         root.setAlignment(Pos.CENTER);
         root.setStyle("-fx-background-color: #424242;");
 
-        Scene scene = new Scene(root);
+        
+        // Preserve stage dimensions on navigation; use defaults on first launch (KAN-39)
+        double w = stage.isShowing() ? stage.getWidth() : 1200;
+        double h = stage.isShowing() ? stage.getHeight() : 800;
+        Scene scene = new Scene(root, w, h);
         stage.setTitle("EXIT");
-
-        // Set initial window size only on first launch.
-        // When navigating back from another view the stage is already showing,
-        // so we skip this to avoid resetting the window dimensions (KAN-39).
-        if (!stage.isShowing()) {
-            stage.setWidth(1200);
-            stage.setHeight(800);
-        }
 
         stage.setScene(scene);
         stage.show();
