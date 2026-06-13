@@ -93,19 +93,19 @@ public class MainView extends Application {
         String subTitleStyle  = "-fx-text-fill: #1565C0; -fx-font-family: Georgia; -fx-font-weight: bold; -fx-font-size: 14;";
 
         // ── Stats panel — top half (Lassina's work, KAN-40) ──────────────────
-        Label statsTitle     = new Label("STATISTIQUES"); statsTitle.setStyle(titleStyle);
-        Label tickLabel      = new Label("Tick : 0");
-        Label evacuatedLabel = new Label("Évacués : 0");
-        Label remainingLabel = new Label("Restants : 0");
-        Label calmLabel      = new Label("Calmes : 0");
-        Label panickedLabel  = new Label("Paniqués : 0");
-        Label injuredLabel   = new Label("Blessés : 0");
+        Label statsTitle     = new Label("STATISTICS"); statsTitle.setStyle(titleStyle);
+        Label tickLabel      = new Label("Tick: 0");
+        Label evacuatedLabel = new Label("Evacuated: 0");
+        Label remainingLabel = new Label("Remaining: 0");
+        Label calmLabel      = new Label("Calm : 0");
+        Label panickedLabel  = new Label("Panicked: 0");
+        Label injuredLabel   = new Label("Injured: 0");
         tickLabel.setStyle(statStyle);      evacuatedLabel.setStyle(statStyle);
         remainingLabel.setStyle(statStyle); calmLabel.setStyle(statStyle);
         panickedLabel.setStyle(statStyle);  injuredLabel.setStyle(statStyle);
 
         // ── Selection panel — bottom half (KAN-41) ───────────────────────────
-        Label selectionTitle = new Label("SÉLECTION"); selectionTitle.setStyle(subTitleStyle);
+        Label selectionTitle = new Label("SELECTION"); selectionTitle.setStyle(subTitleStyle);
         VBox selectionContent = new VBox(6);
 
         // Populates the selection section based on what is currently selected
@@ -117,34 +117,34 @@ public class MainView extends Application {
             if (node != null) {
                 selectionContent.getChildren().addAll(
                     styledStat("ID : "           + node.getId()),
-                    styledStat("Nom : "          + node.getName()),
+                    styledStat("Name : "          + node.getName()),
                     styledStat("Type : "         + node.getType()),
-                    styledStat("Statut : "       + node.getStatus()),
-                    styledStat("Capacité : " + node.getMaxCapacity()),
+                    styledStat("Status : "       + node.getStatus()),
+                    styledStat("Capacity : " + node.getMaxCapacity()),
                     styledStat("Occupants : "    + node.getOccupancy()),
-                    styledStat("Attractivité : " + node.getAttractiveness())
+                    styledStat("Attractiveness : " + node.getAttractiveness())
                 );
             } else if (edge != null) {
                 selectionContent.getChildren().addAll(
                     styledStat("ID : "        + edge.getId()),
-                    styledStat("De : "        + edge.getSource().getName()),
-                    styledStat("Vers : "      + edge.getTarget().getName()),
-                    styledStat("Largeur : "   + edge.getWidth()),
-                    styledStat("Distance : "  + edge.getDistance()),
+                    styledStat("From: "        + edge.getSource().getName()),
+                    styledStat("To: "      + edge.getTarget().getName()),
+                    styledStat("Width: "   + edge.getWidth()),
+                    styledStat("Distance: "  + edge.getDistance()),
                     styledStat("Occupants : " + edge.getOccupancy()),
-                    styledStat("Dirigé : "    + edge.isDirected())
+                    styledStat("Directed: "    + edge.isDirected())
                 );
             } else if (agent != null) {
                 selectionContent.getChildren().addAll(
                     styledStat("ID : "            + agent.getId()),
-                    styledStat("État : "          + agent.getState()),
+                    styledStat("State: "          + agent.getState()),
                     styledStat("Type : "          + agent.getType()),
-                    styledStat("Comportement : "  + agent.getBehavior()),
-                    styledStat("Position : "      + (agent.getCurrentNode()     != null ? agent.getCurrentNode().getName()     : "—")),
-                    styledStat("Destination : "   + (agent.getDestinationNode() != null ? agent.getDestinationNode().getName() : "—"))
+                    styledStat("Behavior: "  + agent.getBehavior()),
+                    styledStat("Position: "      + (agent.getCurrentNode()     != null ? agent.getCurrentNode().getName()     : "—")),
+                    styledStat("Destination: "   + (agent.getDestinationNode() != null ? agent.getDestinationNode().getName() : "—"))
                 );
             } else {
-                selectionContent.getChildren().add(styledStat("Cliquez sur un élément"));
+                selectionContent.getChildren().add(styledStat("Click on an element"));
             }
         };
 
@@ -182,12 +182,12 @@ public class MainView extends Application {
         speedSlider.setSnapToTicks(false);
         speedSlider.setPrefWidth(180);
         speedSlider.setStyle("-fx-control-inner-background: #303030;");
-        Label speedLabel = new Label("Vitesse : 1 tick/s");
+        Label speedLabel = new Label("Speed: 1 tick/s");
         speedLabel.setStyle("-fx-text-fill: #e0e0e0; -fx-font-size: 11;");
         speedSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
             double tps = newVal.doubleValue();
             controller.setSpeed(tps);
-            speedLabel.setText(String.format("Vitesse : %.1f tick/s", tps));
+            speedLabel.setText(String.format("Speed: %.1f tick/s", tps));
         });
         VBox speedBox = new VBox(4, speedLabel, speedSlider);
         speedBox.setAlignment(Pos.CENTER_LEFT);
@@ -197,12 +197,12 @@ public class MainView extends Application {
             long calm     = engine.getAgents().stream().filter(a -> a.getState() == AgentState.CALM).count();
             long panicked = engine.getAgents().stream().filter(a -> a.getState() == AgentState.PANICKED).count();
             long injured  = engine.getAgents().stream().filter(a -> a.getState() == AgentState.INJURED).count();
-            tickLabel.setText("Tick : "       + engine.getCurrentTick());
-            evacuatedLabel.setText("Évacués : "  + engine.getStatistics().getEvacuatedCount());
-            remainingLabel.setText("Restants : " + engine.getAgents().size());
-            calmLabel.setText("Calmes : "     + calm);
-            panickedLabel.setText("Paniqués : "  + panicked);
-            injuredLabel.setText("Blessés : "    + injured);
+            tickLabel.setText("Tick: "       + engine.getCurrentTick());
+            evacuatedLabel.setText("Evacuated : "  + engine.getStatistics().getEvacuatedCount());
+            remainingLabel.setText("Remaining : " + engine.getAgents().size());
+            calmLabel.setText("Calm : "     + calm);
+            panickedLabel.setText("Panicked : "  + panicked);
+            injuredLabel.setText("Injured : "    + injured);
             // Refresh selection info every tick so occupancy/state stay up to date
             updateSelection.run();
         };
@@ -212,18 +212,18 @@ public class MainView extends Application {
 
         // ── Buttons ───────────────────────────────────────────────────────────
         // Engine is not running on load — user starts the simulation manually
-        Button pauseButton = styledButton("▶ Démarrer", "#2E7D32");
+        Button pauseButton = styledButton("▶ Start", "#2E7D32");
         pauseButton.setOnAction(e -> {
             if (engine.isRunning()) {
                 controller.pause();
-                pauseButton.setText("▶ Reprendre");
+                pauseButton.setText("▶ Resume");
             } else {
                 controller.start();
                 pauseButton.setText("⏸ Pause");
             }
         });
 
-        Button stepButton = styledButton("⏭ Pas", "#1565C0");
+        Button stepButton = styledButton("⏭ Step", "#1565C0");
         stepButton.setOnAction(e -> {
             if (!engine.isRunning()) {
                 controller.step();
@@ -236,7 +236,7 @@ public class MainView extends Application {
             }
         });
 
-        Button endButton = styledButton("⏹ Terminer", "#7B1F1F");
+        Button endButton = styledButton("⏹ End", "#7B1F1F");
         endButton.setOnAction(e -> {
             controller.pause();
             controller.stopTimer();
@@ -246,8 +246,8 @@ public class MainView extends Application {
         Button spawnButton   = styledButton("+ Agent",     "#424242");
         Button addNodeButton = styledButton("+ Node",      "#424242");
         Button addEdgeButton = styledButton("+ Edge",      "#424242");
-        Button removeButton  = styledButton("✕ Supprimer", "#7B1F1F");
-        Button retourButton  = styledButton("← Retour",    "#303030");
+        Button removeButton  = styledButton("✕ Remove", "#7B1F1F");
+        Button retourButton  = styledButton("← Back",    "#303030");
 
         spawnButton.setOnAction(e   -> renderer.spawnAgentAtRoom());
         addNodeButton.setOnAction(e -> renderer.addRoomNode());
