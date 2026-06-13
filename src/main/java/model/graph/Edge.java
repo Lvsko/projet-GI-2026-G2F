@@ -1,6 +1,5 @@
-package model;
+package model.graph;
 
-import model.node.Node;
 import model.agent.Agent;
 import java.io.Serializable;
 import java.util.ArrayList;

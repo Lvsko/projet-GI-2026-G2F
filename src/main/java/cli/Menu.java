@@ -1,14 +1,14 @@
 package cli;
 
 import model.agent.Agent;
-import model.Graph;
-import model.node.Node;
-import model.Edge;
+import model.graph.Graph;
+import model.graph.Node;
+import model.graph.Edge;
 import model.agent.AgentType;
 import model.agent.AgentState;
 import model.agent.AgentBehavior;
-import model.node.NodeStatus;
-import model.node.NodeType;
+import model.graph.NodeStatus;
+import model.graph.NodeType;
 import simulation.SimulationEngine;
 import java.util.ArrayList;
 import java.util.List;

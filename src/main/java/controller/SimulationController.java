@@ -4,12 +4,12 @@ import javafx.animation.AnimationTimer;
 import javafx.scene.control.Alert;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import model.Edge;
-import model.Graph;
+import model.graph.Edge;
+import model.graph.Graph;
 import model.agent.Agent;
-import model.node.Node;
-import model.node.NodeStatus;
-import model.node.NodeType;
+import model.graph.Node;
+import model.graph.NodeStatus;
+import model.graph.NodeType;
 import simulation.Pathfinder;
 import simulation.SimulationEngine;
 import simulation.SimulationState;
@@ -133,10 +133,10 @@ public class SimulationController {
                 placeAgentOnNode(agent, fallback);
                 rerouteAgent(agent, fallback, pf);
             }
-            graph.removeEdge(edge.getId());
+            //graph.removeEdge(edge.getId());
         }
 
-        graph.removeNode(id);
+        //graph.removeNode(id);
     }
 
     /**
@@ -165,7 +165,7 @@ public class SimulationController {
             placeAgentOnNode(agent, src);
         }
 
-        graph.removeEdge(id);
+        //graph.removeEdge(id);
 
         for (Agent agent : agentsToReroute) {
             Node from = agent.getCurrentNode();

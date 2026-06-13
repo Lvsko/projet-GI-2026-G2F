@@ -2,11 +2,11 @@ package simulation;
 import java.util.ArrayList;
 import java.util.List;
 
-import model.Graph;
-import model.Edge;
-import model.node.Node;
-import model.node.NodeType;
-import model.node.NodeStatus;
+import model.graph.Graph;
+import model.graph.Edge;
+import model.graph.Node;
+import model.graph.NodeType;
+import model.graph.NodeStatus;
 
 import model.agent.Agent;
 import model.agent.AgentState;

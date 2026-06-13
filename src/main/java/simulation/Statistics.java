@@ -7,9 +7,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import model.agent.Agent;
-import model.node.Node;
-import model.Edge;
-import model.Graph;
+import model.graph.Node;
+import model.graph.Edge;
+import model.graph.Graph;
 
 /**
  * Tracks and computes evacuation statistics during the simulation.

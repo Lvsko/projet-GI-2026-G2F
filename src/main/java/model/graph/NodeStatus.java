@@ -1,4 +1,4 @@
-package model.node;
+package model.graph;
 
 /**
  * Represents the accessibility status of a node.

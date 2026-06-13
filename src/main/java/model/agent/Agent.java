@@ -1,7 +1,7 @@
 package model.agent;
 
-import model.Edge;
-import model.node.Node;
+import model.graph.Edge;
+import model.graph.Node;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;

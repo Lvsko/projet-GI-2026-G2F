@@ -1,4 +1,4 @@
-package model.node;
+package model.graph;
 /**
  * Represents the type of a node in the building graph.
  * @author Yoni

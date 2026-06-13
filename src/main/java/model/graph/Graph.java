@@ -1,11 +1,8 @@
-package model;
+package model.graph;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import model.node.Node;
-import model.node.NodeType;
-import model.Edge;
 
 /**
  * Main structure of the building, contains all nodes and edges.

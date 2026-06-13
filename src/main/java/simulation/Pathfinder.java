@@ -1,10 +1,10 @@
 package simulation;
 
 import model.agent.Agent;
-import model.Graph;
-import model.Edge;
-import model.node.Node;
-import model.node.NodeStatus;
+import model.graph.Graph;
+import model.graph.Edge;
+import model.graph.Node;
+import model.graph.NodeStatus;
 import java.util.*;
 
 /**
@@ -168,7 +168,7 @@ public class Pathfinder {
         float bestScore = Float.MAX_VALUE;
         List<Node> bestPath = new ArrayList<>();
 
-        for (Node exit : getNodesByType(graph, model.node.NodeType.EXIT)) {
+        for (Node exit : getNodesByType(graph, model.graph.NodeType.EXIT)) {
             List<Node> path = agent.getState() == model.agent.AgentState.PANICKED
                     ? dijkstraDistance(agent.getCurrentNode(), exit, graph)
                     : dijkstraTime(agent.getCurrentNode(), exit, graph);
@@ -210,7 +210,7 @@ public class Pathfinder {
      * @param type the node type to filter by
      * @return a list of nodes matching the given type
      */
-    private List<Node> getNodesByType(Graph graph, model.node.NodeType type) {
+    private List<Node> getNodesByType(Graph graph, model.graph.NodeType type) {
         List<Node> result = new ArrayList<>();
         for (Node node : graph.getNodes()) {
             if (node.getType() == type) {

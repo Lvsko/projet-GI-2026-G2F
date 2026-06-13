@@ -1,15 +1,15 @@
 package view;
 
 import controller.SimulationController;
-import model.Graph;
-import model.node.Node;
-import model.Edge;
+import model.graph.Graph;
+import model.graph.Node;
+import model.graph.Edge;
 import model.agent.Agent;
 import model.agent.AgentBehavior;
 import model.agent.AgentState;
 import model.agent.AgentType;
-import model.node.NodeStatus;
-import model.node.NodeType;
+import model.graph.NodeStatus;
+import model.graph.NodeType;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;

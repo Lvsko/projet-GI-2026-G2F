@@ -19,9 +19,9 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import simulation.SimulationEngine;
 import simulation.Statistics;
-import model.Graph;
-import model.node.Node;
-import model.Edge;
+import model.graph.Graph;
+import model.graph.Node;
+import model.graph.Edge;
 import java.io.*;
 import java.util.Map;
 

@@ -1,4 +1,4 @@
-package model.node;
+package model.graph;
 
 import model.agent.Agent;
 import java.io.Serializable;

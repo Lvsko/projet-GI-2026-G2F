@@ -1,8 +1,8 @@
 package simulation;
 
-import model.Graph;
-import model.node.Node;
-import model.Edge;
+import model.graph.Graph;
+import model.graph.Node;
+import model.graph.Edge;
 import model.agent.Agent;
 import model.agent.AgentType;
 import model.agent.AgentState;
@@ -156,7 +156,7 @@ public class SimulationEngine {
 
                 arriveAt(agent, destination);
 
-                if (destination.getType() == model.node.NodeType.EXIT) {
+                if (destination.getType() == model.graph.NodeType.EXIT) {
                     destination.removeAgent(agent);
                     return true;
                 }
@@ -175,7 +175,7 @@ public class SimulationEngine {
                             ? edge.getTarget()
                             : edge.getSource();
 
-                        if (destination.getType() == model.node.NodeType.EXIT) {
+                        if (destination.getType() == model.graph.NodeType.EXIT) {
                             arriveAt(agent, destination);
                             statistics.recordAgentPassedNode(destination);
                             destination.removeAgent(agent);

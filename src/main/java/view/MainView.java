@@ -1,11 +1,11 @@
 package view;
 
 import controller.SimulationController;
-import model.Edge;
-import model.Graph;
+import model.graph.Edge;
+import model.graph.Graph;
 import model.agent.Agent;
 import model.agent.AgentState;
-import model.node.Node;
+import model.graph.Node;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

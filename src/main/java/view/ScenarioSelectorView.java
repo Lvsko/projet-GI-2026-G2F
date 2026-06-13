@@ -1,6 +1,6 @@
 package view;
 
-import model.Graph;
+import model.graph.Graph;
 import model.agent.Agent;
 import simulation.DemoScenario;
 import java.util.List;
