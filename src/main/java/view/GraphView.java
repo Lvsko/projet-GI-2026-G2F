@@ -305,6 +305,7 @@ public class GraphView {
                 stateBox.getValue(), behaviorBox.getValue(), typeBox.getValue(),
                 0.5f
             );
+            finalTarget.addAgent(agent);
             agents.add(agent);
             if (engine != null) engine.addAgent(agent);
             drawGraph();
