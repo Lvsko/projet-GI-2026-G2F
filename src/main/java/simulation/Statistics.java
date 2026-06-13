@@ -82,7 +82,7 @@ public class Statistics implements Serializable {
                 nodePeakOccupancy.put(node, occ);
             }
             // Track overload ticks
-            if (node.isOverloaded()) {
+            if (node.getAgents().size() > node.getMaxCapacity()) {
                 nodeOverloadTicks.put(node, nodeOverloadTicks.getOrDefault(node, 0) + 1);
             }
         }
